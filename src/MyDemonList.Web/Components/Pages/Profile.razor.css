@@ -139,6 +139,58 @@
     gap: 10px;
 }
 
+.langue-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+}
+
+.options-langues {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.option-langue {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 12px;
+    color: #cfd1d7;
+    background: #282a30;
+    border: 1px solid #40424b;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.86rem;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.option-langue:hover,
+.option-langue:focus-visible {
+    border-color: var(--purple-focus);
+    outline: none;
+}
+
+.option-langue.selectionnee {
+    border-color: var(--purple-focus);
+    background: rgba(136, 27, 182, 0.16);
+    color: var(--white);
+}
+
+.code-langue {
+    color: #a9abb4;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.option-langue.selectionnee .code-langue {
+    color: #d98df5;
+}
+
 .selecteur-drapeau {
     width: min(100%, 460px);
     min-width: 0;
@@ -587,12 +639,17 @@ select.input {
         grid-template-columns: 1fr;
     }
 
+    .langue-form {
+        grid-template-columns: 1fr;
+    }
+
     .grille-drapeaux {
         grid-template-columns: 1fr;
     }
 
     .nom-form .btn,
     .drapeau-form > .btn,
+    .langue-form > .btn,
     .section-entete--action .btn {
         width: 100%;
     }

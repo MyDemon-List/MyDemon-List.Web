@@ -79,5 +79,6 @@ jobs:
             docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
             docker compose -f docker-compose.prod.yml exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < Sql/04-Notifications.sql
             docker compose -f docker-compose.prod.yml exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < Sql/05-DrapeauxUtilisateurs.sql
+            docker compose -f docker-compose.prod.yml exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < Sql/06-LanguesUtilisateurs.sql
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f

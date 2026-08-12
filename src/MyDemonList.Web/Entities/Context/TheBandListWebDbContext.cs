@@ -44,6 +44,10 @@ namespace MyDemonList.Web.Entities.Context
             {
                 e.Property(x => x.Nom).HasMaxLength(128).IsRequired();
                 e.Property(x => x.CodePays).HasMaxLength(2);
+                e.Property(x => x.LanguePreferee).HasMaxLength(2);
+                e.ToTable(t => t.HasCheckConstraint(
+                    "CK_Utilisateurs_LanguePreferee",
+                    "\"LanguePreferee\" IS NULL OR \"LanguePreferee\" IN ('fr', 'en', 'es')"));
                 e.HasIndex(x => x.Nom).IsUnique();
             });
 
