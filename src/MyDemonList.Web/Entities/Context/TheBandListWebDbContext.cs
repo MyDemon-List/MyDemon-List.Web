@@ -43,6 +43,7 @@ namespace MyDemonList.Web.Entities.Context
             modelBuilder.Entity<Utilisateur>(e =>
             {
                 e.Property(x => x.Nom).HasMaxLength(128).IsRequired();
+                e.Property(x => x.CodePays).HasMaxLength(2);
                 e.HasIndex(x => x.Nom).IsUnique();
             });
 

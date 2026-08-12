@@ -237,6 +237,10 @@
                             <div class="win-row">
                                 <span class="win-index">#@(index + 1)</span>
                                 <a class="win-user" href="@(value.Utilisateur is null ? null : ObtenirCheminUtilisateur(value.Utilisateur.Id))">
+                                    @if (value.Utilisateur?.CodePays is not null)
+                                    {
+                                        <img class="win-drapeau" src="@PaysUtils.ObtenirUrlDrapeau(value.Utilisateur.CodePays)" alt="@PaysUtils.ObtenirNom(value.Utilisateur.CodePays)" title="@PaysUtils.ObtenirNom(value.Utilisateur.CodePays)" loading="lazy" />
+                                    }
                                     @value.Utilisateur?.Nom
                                 </a>
                                 <a class="win-yt" href="@value.Video" target="_blank" rel="ugc noopener noreferrer">@Texte["Preuve", "Preuve"]</a>

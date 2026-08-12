@@ -131,7 +131,11 @@
                                 <img class="avatar-joueur" src="@utilisateur.AvatarUrl" alt="" loading="lazy" />
                             }
                             <p class="@ObtenirClassBackground(utilisateur.Id) utilisateur-groupe-nom">
-                                @utilisateur.Nom
+                                <span>@utilisateur.Nom</span>
+                                @if (utilisateur.CodePays is not null)
+                                {
+                                    <img class="drapeau-joueur" src="@PaysUtils.ObtenirUrlDrapeau(utilisateur.CodePays)" alt="@PaysUtils.ObtenirNom(utilisateur.CodePays)" title="@PaysUtils.ObtenirNom(utilisateur.CodePays)" loading="lazy" />
+                                }
                             </p>
                             <p class="utilisateur-groupe-nombre">@utilisateur.TotalPoints @Texte["Points", "Points"]</p>
                         </a>
@@ -152,7 +156,11 @@
                                 <img class="avatar-joueur" src="@createur.AvatarUrl" alt="" loading="lazy" />
                             }
                             <p class="@ObtenirClassBackground(createur.Id) utilisateur-groupe-nom">
-                                @createur.Nom
+                                <span>@createur.Nom</span>
+                                @if (createur.CodePays is not null)
+                                {
+                                    <img class="drapeau-joueur" src="@PaysUtils.ObtenirUrlDrapeau(createur.CodePays)" alt="@PaysUtils.ObtenirNom(createur.CodePays)" title="@PaysUtils.ObtenirNom(createur.CodePays)" loading="lazy" />
+                                }
                             </p>
                             <p class="utilisateur-groupe-nombre">@createur.NombreNiveaux @Texte["Creations", "Créations"]</p>
                         </a>
@@ -173,7 +181,11 @@
                                 <img class="avatar-joueur" src="@utilisateur.AvatarUrl" alt="" loading="lazy" />
                             }
                             <p class="@ObtenirClassBackground(utilisateur.Id) utilisateur-groupe-nom">
-                                @utilisateur.Nom
+                                <span>@utilisateur.Nom</span>
+                                @if (utilisateur.CodePays is not null)
+                                {
+                                    <img class="drapeau-joueur" src="@PaysUtils.ObtenirUrlDrapeau(utilisateur.CodePays)" alt="@PaysUtils.ObtenirNom(utilisateur.CodePays)" title="@PaysUtils.ObtenirNom(utilisateur.CodePays)" loading="lazy" />
+                                }
                             </p>
                             <p class="utilisateur-groupe-nombre">@utilisateur.TotalNiveauxReussis @Texte["NiveauxReussis", "Niveaux réussis"]</p>
                         </a>
@@ -210,6 +222,10 @@
                                     <span class="profil-rang">#@_utilisateurSelectionne.Classement</span>
                                 }
                                 <h2>@_utilisateurSelectionne.Nom</h2>
+                                @if (_utilisateurSelectionne.CodePays is not null)
+                                {
+                                    <img class="drapeau-joueur drapeau-joueur--grand" src="@PaysUtils.ObtenirUrlDrapeau(_utilisateurSelectionne.CodePays)" alt="@PaysUtils.ObtenirNom(_utilisateurSelectionne.CodePays)" title="@PaysUtils.ObtenirNom(_utilisateurSelectionne.CodePays)" />
+                                }
                             </div>
                         </div>
                     </div>

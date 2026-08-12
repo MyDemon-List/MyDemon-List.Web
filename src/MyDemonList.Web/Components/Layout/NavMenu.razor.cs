@@ -35,12 +35,16 @@ namespace MyDemonList.Web.Components.Layout
         private NotificationSignalService NotificationSignal { get; set; } = default!;
 
         [Inject]
+        private ProfilUtilisateurSignalService ProfilSignal { get; set; } = default!;
+
+        [Inject]
         private IJSRuntime JsRuntime { get; set; } = default!;
 
         [CascadingParameter]
         private Task<AuthenticationState>? AuthStateTask { get; set; }
 
         private string? _displayName;
+        private string? _codePays;
         private bool _peutGererListe;
         private bool _peutAccederAdmin;
         private int? _utilisateurId;
@@ -80,6 +84,15 @@ namespace MyDemonList.Web.Components.Layout
             _hoveredItem = new Uri(_currentUri).AbsolutePath;
             NavigationManager.LocationChanged += HandleLocationChanged;
             ListeSession.OnChanged += OnListeSessionChanged;
+            ProfilSignal.DrapeauModifie += OnDrapeauModifie;
+        }
+
+        private void OnDrapeauModifie(int utilisateurId, string? codePays)
+        {
+            if (_utilisateurId != utilisateurId || _componentDetruit) return;
+
+            _codePays = codePays;
+            _ = InvokeAsync(StateHasChanged);
         }
 
         private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -140,6 +153,7 @@ namespace MyDemonList.Web.Components.Layout
 
                     _displayName = compte?.Utilisateur?.Nom ?? fallbackName;
                     _utilisateurId = compte?.Utilisateur?.Id;
+                    _codePays = compte?.Utilisateur?.CodePays;
 
                     if (_utilisateurId is int utilisateurId)
                     {
@@ -438,6 +452,7 @@ namespace MyDemonList.Web.Components.Layout
         {
             _componentDetruit = true;
             NavigationManager.LocationChanged -= HandleLocationChanged;
+            ProfilSignal.DrapeauModifie -= OnDrapeauModifie;
             if (_subscribed) Presence.StatusChanged -= OnPresenceChanged;
             if (_notificationsSubscribed)
             {

@@ -48,6 +48,7 @@ builder.Services.AddScoped<SiteAdminService>();
 builder.Services.AddScoped<QuotaService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<NotificationSignalService>();
+builder.Services.AddScoped<ProfilUtilisateurSignalService>();
 builder.Services.AddScoped<ListeSessionService>();
 builder.Services.AddScoped<Chargement>();
 builder.Services.AddHttpClient();
