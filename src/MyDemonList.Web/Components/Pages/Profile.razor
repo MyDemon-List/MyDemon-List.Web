@@ -65,28 +65,8 @@
                                    class="input"
                                    aria-label="@Texte["NomAffiche", "Nom affiché"]"
                                    value="@_nom"
-                                   @oninput="(e => _nom = e.Value?.ToString() ?? string.Empty)" />
-                            <button type="button" class="btn" @onclick="EnregistrerNom" disabled="@_saving">
-                                @if (_saving)
-                                {
-                                    <span class="spinner" aria-hidden="true"></span>
-                                    <span>@Texte["Enregistrement", "Enregistrement..."]</span>
-                                }
-                                else
-                                {
-                                    <span>@Texte["Enregistrer", "Enregistrer"]</span>
-                                }
-                            </button>
+                                   @oninput="ModifierNom" />
                         </div>
-
-                        @if (!string.IsNullOrWhiteSpace(_validation))
-                        {
-                            <div class="alert alert-error">@_validation</div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(_succes))
-                        {
-                            <div class="alert alert-success">@_succes</div>
-                        }
                     </section>
 
                     <section class="profil-section">
@@ -148,27 +128,7 @@
                                 }
                             </div>
 
-                            <button type="button" class="btn" @onclick="EnregistrerDrapeau" disabled="@(_savingDrapeau || _codePays == _codePaysActuel)">
-                                @if (_savingDrapeau)
-                                {
-                                    <span class="spinner" aria-hidden="true"></span>
-                                    <span>@Texte["Enregistrement", "Enregistrement..."]</span>
-                                }
-                                else
-                                {
-                                    <span>@Texte["Enregistrer", "Enregistrer"]</span>
-                                }
-                            </button>
                         </div>
-
-                        @if (!string.IsNullOrWhiteSpace(_validationDrapeau))
-                        {
-                            <div class="alert alert-error">@_validationDrapeau</div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(_succesDrapeau))
-                        {
-                            <div class="alert alert-success">@_succesDrapeau</div>
-                        }
                     </section>
 
                     <section class="profil-section">
@@ -192,24 +152,33 @@
                                 }
                             </div>
 
-                            <button type="button" class="btn" @onclick="EnregistrerLangue" disabled="@(_savingLangue || _languePreferee == _languePrefereeActuelle)">
-                                @if (_savingLangue)
-                                {
-                                    <span class="spinner" aria-hidden="true"></span>
-                                    <span>@Texte["Enregistrement", "Enregistrement..."]</span>
-                                }
-                                else
-                                {
-                                    <span>@Texte["Enregistrer", "Enregistrer"]</span>
-                                }
-                            </button>
+                        </div>
+                    </section>
+
+                    <div class="profil-sauvegarde">
+                        <div class="profil-sauvegarde-message">
+                            @if (!string.IsNullOrWhiteSpace(_validation))
+                            {
+                                <div class="alert alert-error">@_validation</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_succes))
+                            {
+                                <div class="alert alert-success">@_succes</div>
+                            }
                         </div>
 
-                        @if (!string.IsNullOrWhiteSpace(_validationLangue))
-                        {
-                            <div class="alert alert-error">@_validationLangue</div>
-                        }
-                    </section>
+                        <button type="button" class="btn" @onclick="EnregistrerProfil" disabled="@(_saving || !ProfilModifie)">
+                            @if (_saving)
+                            {
+                                <span class="spinner" aria-hidden="true"></span>
+                                <span>@Texte["Enregistrement", "Enregistrement..."]</span>
+                            }
+                            else
+                            {
+                                <span>@Texte["EnregistrerModifications", "Enregistrer les modifications"]</span>
+                            }
+                        </button>
+                    </div>
 
                     <section class="profil-section">
                         <div class="section-entete section-entete--action">
