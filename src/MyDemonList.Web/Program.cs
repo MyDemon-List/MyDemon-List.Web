@@ -136,6 +136,14 @@ ForwardedHeadersOptions fwd = new ForwardedHeadersOptions
 fwd.KnownIPNetworks.Clear();
 fwd.KnownProxies.Clear();
 app.UseForwardedHeaders(fwd);
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseHsts();
+}
+
+app.UseAuthentication();
 app.UseRequestLocalization();
 app.Use(async (httpContext, suivant) =>
 {
@@ -159,20 +167,53 @@ app.Use(async (httpContext, suivant) =>
         bool parametreLanguePresent = httpContext.Request.Query.ContainsKey("lang");
         string? langueDemandee = httpContext.Request.Query["lang"].FirstOrDefault()?.Trim().ToLowerInvariant();
         string? langueDuChemin = SeoUtils.ObtenirLangueDuChemin(chemin);
+        string? languePreferee = null;
+        string? discordId = httpContext.User.FindFirst("discord:id")?.Value;
+        if (!string.IsNullOrWhiteSpace(discordId))
+        {
+            MyDemonListWebDbContext dbContext = httpContext.RequestServices.GetRequiredService<MyDemonListWebDbContext>();
+            languePreferee = await dbContext.DiscordAccounts
+                .AsNoTracking()
+                .Where(compte => compte.DiscordId == discordId)
+                .Select(compte => compte.Utilisateur.LanguePreferee)
+                .SingleOrDefaultAsync(httpContext.RequestAborted);
+            languePreferee = languePreferee?.ToLowerInvariant();
+
+            if (languePreferee is not null
+                && !Traductions.LanguesSupportees.Contains(languePreferee, StringComparer.OrdinalIgnoreCase))
+                languePreferee = null;
+        }
+
         string? langueDuNavigateur = httpContext.Request.GetTypedHeaders().AcceptLanguage?
             .Where(valeur => (valeur.Quality ?? 1) > 0)
             .OrderByDescending(valeur => valeur.Quality ?? 1)
             .Select(valeur => valeur.Value.Value?.Split('-', 2)[0].ToLowerInvariant())
             .FirstOrDefault(code => code is not null
                 && Traductions.LanguesSupportees.Contains(code, StringComparer.OrdinalIgnoreCase));
-        string langueEffective = parametreLanguePresent
+        string langueEffective = languePreferee ?? (parametreLanguePresent
             ? langueDemandee is not null && Traductions.LanguesSupportees.Contains(langueDemandee, StringComparer.OrdinalIgnoreCase)
                 ? langueDemandee
                 : "en"
-            : langueDuChemin ?? langueDuNavigateur ?? "en";
+            : langueDuChemin ?? langueDuNavigateur ?? "en");
 
         if (!Traductions.LanguesSupportees.Contains(langueEffective, StringComparer.OrdinalIgnoreCase))
             langueEffective = "en";
+
+        if (languePreferee is not null)
+        {
+            httpContext.Response.Cookies.Append(
+                "mdl_langue_initialisee",
+                "1",
+                new CookieOptions
+                {
+                    IsEssential = true,
+                    HttpOnly = false,
+                    Secure = httpContext.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    MaxAge = TimeSpan.FromDays(365),
+                    Path = "/"
+                });
+        }
 
         string valeurCookieCulture = CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(langueEffective));
         if (!httpContext.Request.Cookies.TryGetValue(CookieRequestCultureProvider.DefaultCookieName, out string? valeurCookieActuelle)
@@ -206,9 +247,14 @@ app.Use(async (httpContext, suivant) =>
 
             string destination = SeoUtils.LocaliserChemin(cheminSansLangue, langueEffective)
                 + QueryString.Create(parametres);
-            bool redirectionAutomatique = langueDuChemin is null && !parametreLanguePresent;
+            bool redirectionPreference = languePreferee is not null;
+            bool redirectionAutomatique = redirectionPreference || langueDuChemin is null && !parametreLanguePresent;
             if (redirectionAutomatique)
-                httpContext.Response.Headers.Vary = "Accept-Language";
+            {
+                httpContext.Response.Headers.Vary = redirectionPreference ? "Cookie" : "Accept-Language";
+                if (redirectionPreference)
+                    httpContext.Response.Headers.CacheControl = "private, no-store";
+            }
 
             httpContext.Response.Redirect(destination, permanent: !redirectionAutomatique);
             return;
@@ -217,12 +263,6 @@ app.Use(async (httpContext, suivant) =>
 
     await suivant();
 });
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
-}
 
 app.UseHttpsRedirection();
 app.UseStatusCodePagesWithReExecute("/404");
@@ -261,7 +301,6 @@ app.UseStaticFiles(new StaticFileOptions
         contexte.Context.Response.Headers.CacheControl = "public, max-age=3600"
 });
 
-app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 

@@ -172,6 +172,46 @@
                     </section>
 
                     <section class="profil-section">
+                        <div class="section-entete">
+                            <h2>@Texte["LangueSite", "Langue du site"]</h2>
+                            <p>@Texte["LangueSiteAide", "Cette langue sera utilisée sur tous vos appareils lorsque vous êtes connecté avec Discord."]</p>
+                        </div>
+
+                        <div class="langue-form">
+                            <div class="options-langues" role="radiogroup" aria-label="@Texte["LangueSite", "Langue du site"]">
+                                @foreach (LangueAffichage langue in LanguesDisponibles)
+                                {
+                                    <button type="button"
+                                            class="option-langue @(langue.Code == _languePreferee ? "selectionnee" : null)"
+                                            role="radio"
+                                            aria-checked="@(langue.Code == _languePreferee)"
+                                            @onclick="() => SelectionnerLangue(langue.Code)">
+                                        <span class="code-langue">@langue.Code.ToUpperInvariant()</span>
+                                        <span>@langue.Nom</span>
+                                    </button>
+                                }
+                            </div>
+
+                            <button type="button" class="btn" @onclick="EnregistrerLangue" disabled="@(_savingLangue || _languePreferee == _languePrefereeActuelle)">
+                                @if (_savingLangue)
+                                {
+                                    <span class="spinner" aria-hidden="true"></span>
+                                    <span>@Texte["Enregistrement", "Enregistrement..."]</span>
+                                }
+                                else
+                                {
+                                    <span>@Texte["Enregistrer", "Enregistrer"]</span>
+                                }
+                            </button>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(_validationLangue))
+                        {
+                            <div class="alert alert-error">@_validationLangue</div>
+                        }
+                    </section>
+
+                    <section class="profil-section">
                         <div class="section-entete section-entete--action">
                             <div>
                                 <h2>@Texte["FusionCompte", "Fusion de compte"]</h2>
