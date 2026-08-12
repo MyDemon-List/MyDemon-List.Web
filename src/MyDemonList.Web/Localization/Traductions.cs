@@ -456,9 +456,9 @@ public sealed class Traductions
 
     public string CodeLangue => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant() switch
     {
-        "en" => "en",
+        "fr" => "fr",
         "es" => "es",
-        _ => "fr"
+        _ => "en"
     };
 
     public string this[string cle, string francais]

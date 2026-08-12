@@ -65,12 +65,18 @@ builder.Services.AddHttpClient<LevelThumbnailService>(client =>
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
-    string cultureParDefaut = builder.Configuration["Localization:DefaultCulture"] ?? "fr";
     string[] culturesConfigurees = builder.Configuration
         .GetSection("Localization:SupportedCultures")
-        .Get<string[]>() ?? [cultureParDefaut];
-    CultureInfo[] cultures = culturesConfigurees
+        .Get<string[]>() ?? Traductions.LanguesSupportees;
+    string[] codesCultures = culturesConfigurees
+        .Append("en")
         .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+    string cultureConfiguree = builder.Configuration["Localization:DefaultCulture"] ?? "en";
+    string cultureParDefaut = codesCultures.Contains(cultureConfiguree, StringComparer.OrdinalIgnoreCase)
+        ? cultureConfiguree
+        : "en";
+    CultureInfo[] cultures = codesCultures
         .Select(CultureInfo.GetCultureInfo)
         .ToArray();
 
@@ -80,11 +86,19 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.ApplyCurrentCultureToResponseHeaders = true;
     options.RequestCultureProviders =
     [
-        new QueryStringRequestCultureProvider
+        new CustomRequestCultureProvider(httpContext =>
         {
-            QueryStringKey = "lang",
-            UIQueryStringKey = "lang"
-        },
+            if (!httpContext.Request.Query.ContainsKey("lang"))
+                return Task.FromResult<ProviderCultureResult?>(null);
+
+            string? langueDemandee = httpContext.Request.Query["lang"].FirstOrDefault()?.Trim().ToLowerInvariant();
+            string langue = langueDemandee is not null
+                && Traductions.LanguesSupportees.Contains(langueDemandee, StringComparer.OrdinalIgnoreCase)
+                    ? langueDemandee
+                    : "en";
+
+            return Task.FromResult<ProviderCultureResult?>(new ProviderCultureResult(langue));
+        }),
         new BlazorCultureCookieProvider(),
         new AcceptLanguageHeaderRequestCultureProvider()
     ];
@@ -124,9 +138,13 @@ app.Use(async (httpContext, suivant) =>
 
     if (estDocumentHtml)
     {
+        bool parametreLanguePresent = httpContext.Request.Query.ContainsKey("lang");
         string? langueDemandee = httpContext.Request.Query["lang"].FirstOrDefault()?.Trim().ToLowerInvariant();
         bool langueValide = langueDemandee is not null
             && Traductions.LanguesSupportees.Contains(langueDemandee, StringComparer.OrdinalIgnoreCase);
+        string? langueEffective = parametreLanguePresent
+            ? langueValide ? langueDemandee : "en"
+            : null;
 
         httpContext.Response.OnStarting(() =>
         {
@@ -139,11 +157,11 @@ app.Use(async (httpContext, suivant) =>
                 Path = "/"
             };
 
-            if (langueValide)
+            if (langueEffective is not null)
             {
                 httpContext.Response.Cookies.Append(
                     CookieRequestCultureProvider.DefaultCookieName,
-                    CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(langueDemandee!)),
+                    CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(langueEffective)),
                     optionsCookie);
             }
             else
@@ -286,7 +304,7 @@ app.MapGet("/sitemap.xml", async (MyDemonListWebDbContext dbContext, IConfigurat
                 entree.Add(new XElement(xhtml + "link",
                     new XAttribute("rel", "alternate"),
                     new XAttribute("hreflang", "x-default"),
-                    new XAttribute("href", ObtenirUrlLangue(chemin, "fr"))));
+                    new XAttribute("href", ObtenirUrlLangue(chemin, "en"))));
 
                 if (date is not null)
                     entree.Add(new XElement(espace + "lastmod", date));
