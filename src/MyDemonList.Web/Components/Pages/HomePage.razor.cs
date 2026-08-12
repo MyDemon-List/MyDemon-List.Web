@@ -198,7 +198,7 @@ namespace MyDemonList.Web.Components.Pages
             ListeSession.SetListe(liste.Id, liste.Nom, liste.DiscordServerUrl);
             string chemin = SeoUtils.CheminGestion(liste.Id, liste.Nom);
             string url = ouvrirSurParametres ? $"{chemin}?onglet=parametres" : chemin;
-            NavigationManager.NavigateTo(url);
+            NavigationManager.NavigateTo(SeoUtils.LocaliserChemin(url, Texte.CodeLangue));
         }
 
         private async Task DemanderAugmentationListes()
@@ -213,7 +213,7 @@ namespace MyDemonList.Web.Components.Pages
             _demandeListesEnCours = _derniereDemandeListes?.Statut == "EnAttente";
         }
 
-        private static string FormaterDuree(TimeSpan duree) => DureeUtils.Formater(duree);
+        private string FormaterDuree(TimeSpan duree) => DureeUtils.Formater(duree, Texte.CodeLangue);
 
         private void ToggleFormulaireCreation()
         {

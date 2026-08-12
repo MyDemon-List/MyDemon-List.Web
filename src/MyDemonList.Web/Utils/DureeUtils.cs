@@ -2,9 +2,15 @@ namespace MyDemonList.Web.Utils
 {
     public static class DureeUtils
     {
-        public static string Formater(TimeSpan duree)
+        public static string Formater(TimeSpan duree, string? langue = null)
         {
-            string langue = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            langue = langue?.ToLowerInvariant() switch
+            {
+                "fr" => "fr",
+                "es" => "es",
+                "en" => "en",
+                _ => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName
+            };
             if (duree.TotalDays >= 1)
                 return FormaterUnite(Math.Ceiling(duree.TotalDays), langue, "jour", "jours", "day", "days", "día", "días");
             if (duree.TotalHours >= 1)
@@ -17,9 +23,9 @@ namespace MyDemonList.Web.Utils
             bool singulier = valeur == 1;
             string unite = langue switch
             {
-                "en" => singulier ? enSingulier : enPluriel,
+                "fr" => singulier ? frSingulier : frPluriel,
                 "es" => singulier ? esSingulier : esPluriel,
-                _ => singulier ? frSingulier : frPluriel
+                _ => singulier ? enSingulier : enPluriel
             };
             return $"{valeur:0} {unite}";
         }

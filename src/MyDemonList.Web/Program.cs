@@ -48,10 +48,11 @@ builder.Services.AddScoped<SiteAdminService>();
 builder.Services.AddScoped<QuotaService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<NotificationSignalService>();
+builder.Services.AddScoped<ProfilUtilisateurSignalService>();
 builder.Services.AddScoped<ListeSessionService>();
 builder.Services.AddScoped<Chargement>();
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<Traductions>();
+builder.Services.AddScoped<Traductions>();
 builder.Services.AddHttpClient<GdBrowserService>(client =>
 {
     client.BaseAddress = new Uri("https://gdbrowser.com/api/");
@@ -65,12 +66,18 @@ builder.Services.AddHttpClient<LevelThumbnailService>(client =>
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
-    string cultureParDefaut = builder.Configuration["Localization:DefaultCulture"] ?? "fr";
     string[] culturesConfigurees = builder.Configuration
         .GetSection("Localization:SupportedCultures")
-        .Get<string[]>() ?? [cultureParDefaut];
-    CultureInfo[] cultures = culturesConfigurees
+        .Get<string[]>() ?? Traductions.LanguesSupportees;
+    string[] codesCultures = culturesConfigurees
+        .Append("en")
         .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+    string cultureConfiguree = builder.Configuration["Localization:DefaultCulture"] ?? "en";
+    string cultureParDefaut = codesCultures.Contains(cultureConfiguree, StringComparer.OrdinalIgnoreCase)
+        ? cultureConfiguree
+        : "en";
+    CultureInfo[] cultures = codesCultures
         .Select(CultureInfo.GetCultureInfo)
         .ToArray();
 
@@ -80,12 +87,25 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.ApplyCurrentCultureToResponseHeaders = true;
     options.RequestCultureProviders =
     [
-        new QueryStringRequestCultureProvider
+        new CustomRequestCultureProvider(httpContext =>
         {
-            QueryStringKey = "lang",
-            UIQueryStringKey = "lang"
-        },
-        new BlazorCultureCookieProvider(),
+            if (!httpContext.Request.Query.ContainsKey("lang"))
+                return Task.FromResult<ProviderCultureResult?>(null);
+
+            string? langueDemandee = httpContext.Request.Query["lang"].FirstOrDefault()?.Trim().ToLowerInvariant();
+            string langue = langueDemandee is not null
+                && Traductions.LanguesSupportees.Contains(langueDemandee, StringComparer.OrdinalIgnoreCase)
+                    ? langueDemandee
+                    : "en";
+
+            return Task.FromResult<ProviderCultureResult?>(new ProviderCultureResult(langue));
+        }),
+        new CustomRequestCultureProvider(httpContext =>
+        {
+            string? langue = SeoUtils.ObtenirLangueDuChemin(httpContext.Request.Path.Value ?? "/");
+            return Task.FromResult<ProviderCultureResult?>(langue is null ? null : new ProviderCultureResult(langue));
+        }),
+        new CookieRequestCultureProvider(),
         new AcceptLanguageHeaderRequestCultureProvider()
     ];
 });
@@ -119,42 +139,80 @@ app.UseForwardedHeaders(fwd);
 app.UseRequestLocalization();
 app.Use(async (httpContext, suivant) =>
 {
-    bool estDocumentHtml = HttpMethods.IsGet(httpContext.Request.Method)
-        && httpContext.Request.GetTypedHeaders().Accept?.Any(type => type.MediaType.Value.Equals("text/html", StringComparison.OrdinalIgnoreCase)) == true;
+    string chemin = httpContext.Request.Path.Value ?? "/";
+    string cheminSansLangue = SeoUtils.RetirerPrefixeLangue(chemin);
+    bool estAliasProfil = cheminSansLangue.Equals("/profile", StringComparison.OrdinalIgnoreCase);
+    if (estAliasProfil) cheminSansLangue = "/profil";
+    bool estPageLocalisable = cheminSansLangue == "/"
+        || cheminSansLangue.Equals("/classement", StringComparison.OrdinalIgnoreCase)
+        || cheminSansLangue.Equals("/soumettre-une-reussite", StringComparison.OrdinalIgnoreCase)
+        || cheminSansLangue.Equals("/profil", StringComparison.OrdinalIgnoreCase)
+        || cheminSansLangue.Equals("/profile", StringComparison.OrdinalIgnoreCase)
+        || cheminSansLangue.Equals("/admin", StringComparison.OrdinalIgnoreCase)
+        || cheminSansLangue.Equals("/404", StringComparison.OrdinalIgnoreCase)
+        || cheminSansLangue.Equals("/Error", StringComparison.OrdinalIgnoreCase)
+        || cheminSansLangue.Equals("/liste", StringComparison.OrdinalIgnoreCase)
+        || cheminSansLangue.StartsWith("/liste/", StringComparison.OrdinalIgnoreCase);
 
-    if (estDocumentHtml)
+    if ((HttpMethods.IsGet(httpContext.Request.Method) || HttpMethods.IsHead(httpContext.Request.Method)) && estPageLocalisable)
     {
+        bool parametreLanguePresent = httpContext.Request.Query.ContainsKey("lang");
         string? langueDemandee = httpContext.Request.Query["lang"].FirstOrDefault()?.Trim().ToLowerInvariant();
-        bool langueValide = langueDemandee is not null
-            && Traductions.LanguesSupportees.Contains(langueDemandee, StringComparer.OrdinalIgnoreCase);
+        string? langueDuChemin = SeoUtils.ObtenirLangueDuChemin(chemin);
+        string? langueDuNavigateur = httpContext.Request.GetTypedHeaders().AcceptLanguage?
+            .Where(valeur => (valeur.Quality ?? 1) > 0)
+            .OrderByDescending(valeur => valeur.Quality ?? 1)
+            .Select(valeur => valeur.Value.Value?.Split('-', 2)[0].ToLowerInvariant())
+            .FirstOrDefault(code => code is not null
+                && Traductions.LanguesSupportees.Contains(code, StringComparer.OrdinalIgnoreCase));
+        string langueEffective = parametreLanguePresent
+            ? langueDemandee is not null && Traductions.LanguesSupportees.Contains(langueDemandee, StringComparer.OrdinalIgnoreCase)
+                ? langueDemandee
+                : "en"
+            : langueDuChemin ?? langueDuNavigateur ?? "en";
 
-        httpContext.Response.OnStarting(() =>
+        if (!Traductions.LanguesSupportees.Contains(langueEffective, StringComparer.OrdinalIgnoreCase))
+            langueEffective = "en";
+
+        string valeurCookieCulture = CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(langueEffective));
+        if (!httpContext.Request.Cookies.TryGetValue(CookieRequestCultureProvider.DefaultCookieName, out string? valeurCookieActuelle)
+            || !valeurCookieActuelle.Equals(valeurCookieCulture, StringComparison.Ordinal))
         {
-            CookieOptions optionsCookie = new CookieOptions
-            {
-                IsEssential = true,
-                HttpOnly = true,
-                Secure = httpContext.Request.IsHttps,
-                SameSite = SameSiteMode.Lax,
-                Path = "/"
-            };
+            httpContext.Response.Cookies.Append(
+                CookieRequestCultureProvider.DefaultCookieName,
+                valeurCookieCulture,
+                new CookieOptions
+                {
+                    IsEssential = true,
+                    HttpOnly = true,
+                    Secure = httpContext.Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Path = "/"
+                });
+        }
 
-            if (langueValide)
+        bool racineLangueSansBarre = langueDuChemin is not null
+            && chemin.Equals($"/{langueDuChemin}", StringComparison.OrdinalIgnoreCase);
+
+        if (estAliasProfil || parametreLanguePresent || langueDuChemin is null || racineLangueSansBarre || !langueDuChemin.Equals(langueEffective, StringComparison.OrdinalIgnoreCase))
+        {
+            List<KeyValuePair<string, string?>> parametres = [];
+            foreach ((string cle, Microsoft.Extensions.Primitives.StringValues valeurs) in httpContext.Request.Query)
             {
-                httpContext.Response.Cookies.Append(
-                    CookieRequestCultureProvider.DefaultCookieName,
-                    CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(langueDemandee!)),
-                    optionsCookie);
-            }
-            else
-            {
-                httpContext.Response.Cookies.Delete(
-                    CookieRequestCultureProvider.DefaultCookieName,
-                    optionsCookie);
+                if (cle.Equals("lang", StringComparison.OrdinalIgnoreCase)) continue;
+                foreach (string? valeur in valeurs)
+                    parametres.Add(new KeyValuePair<string, string?>(cle, valeur));
             }
 
-            return Task.CompletedTask;
-        });
+            string destination = SeoUtils.LocaliserChemin(cheminSansLangue, langueEffective)
+                + QueryString.Create(parametres);
+            bool redirectionAutomatique = langueDuChemin is null && !parametreLanguePresent;
+            if (redirectionAutomatique)
+                httpContext.Response.Headers.Vary = "Accept-Language";
+
+            httpContext.Response.Redirect(destination, permanent: !redirectionAutomatique);
+            return;
+        }
     }
 
     await suivant();
@@ -264,8 +322,7 @@ app.MapGet("/sitemap.xml", async (MyDemonListWebDbContext dbContext, IConfigurat
 
         string ObtenirUrlLangue(string chemin, string langue)
         {
-            string url = $"{urlBase}{chemin}";
-            return langue == "fr" ? url : $"{url}?lang={langue}";
+            return $"{urlBase}{SeoUtils.LocaliserChemin(chemin, langue)}";
         }
 
         IEnumerable<XElement> CreerEntreesLocalisees(string chemin, string? date = null)
@@ -286,7 +343,7 @@ app.MapGet("/sitemap.xml", async (MyDemonListWebDbContext dbContext, IConfigurat
                 entree.Add(new XElement(xhtml + "link",
                     new XAttribute("rel", "alternate"),
                     new XAttribute("hreflang", "x-default"),
-                    new XAttribute("href", ObtenirUrlLangue(chemin, "fr"))));
+                    new XAttribute("href", ObtenirUrlLangue(chemin, "en"))));
 
                 if (date is not null)
                     entree.Add(new XElement(espace + "lastmod", date));

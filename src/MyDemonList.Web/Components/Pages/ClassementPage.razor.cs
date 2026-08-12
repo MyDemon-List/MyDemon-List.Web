@@ -146,7 +146,7 @@ namespace MyDemonList.Web.Components.Pages
             int? listeIdDemande = ListeId ?? ListeSession.ListeId;
             if (listeIdDemande is not int listeId)
             {
-                NavigationManager.NavigateTo("/");
+                NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/", Texte.CodeLangue));
                 return;
             }
 
@@ -159,7 +159,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (_listeCourante is null || !await PeutConsulterListeAsync(dbContext, _listeCourante))
                 {
-                    NavigationManager.NavigateTo("/404");
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/404", Texte.CodeLangue));
                     return;
                 }
 
@@ -172,7 +172,7 @@ namespace MyDemonList.Web.Components.Pages
             ListeSession.SetListe(_listeCourante.Id, _listeCourante.Nom, _listeCourante.DiscordServerUrl);
 
             string cheminCanonique = SeoUtils.CheminClassement(_listeCourante.Id, _listeCourante.Nom);
-            string cheminActuel = new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/');
+            string cheminActuel = SeoUtils.RetirerPrefixeLangue(new Uri(NavigationManager.Uri).AbsolutePath).TrimEnd('/');
             if (!cheminActuel.Equals(cheminCanonique, StringComparison.OrdinalIgnoreCase))
             {
                 string destination = JoueurSelectionneId is int utilisateurId
@@ -393,6 +393,7 @@ namespace MyDemonList.Web.Components.Pages
                 {
                     Id = u.Id,
                     Nom = u.Nom,
+                    CodePays = u.CodePays,
                     AvatarUrl = _avatarUrlParUtilisateurId.GetValueOrDefault(u.Id),
                     TotalPoints = PointsVerifieur(u.Id) + PointsReussis(u.Id),
                     TotalNiveauxReussis = TotalNiveauxReussis(u.Id),
@@ -431,6 +432,7 @@ namespace MyDemonList.Web.Components.Pages
                 {
                     Id = u.Id,
                     Nom = u.Nom,
+                    CodePays = u.CodePays,
                     AvatarUrl = _avatarUrlParUtilisateurId.GetValueOrDefault(u.Id),
                     NombreNiveaux = _listeCreateurs.Count(cn => cn.CreateurId == u.Id)
                 })
@@ -469,6 +471,7 @@ namespace MyDemonList.Web.Components.Pages
                     {
                         Id = c.Id,
                         Nom = c.Nom,
+                        CodePays = c.CodePays,
                         AvatarUrl = c.AvatarUrl,
                         TotalPoints = 0,
                         TotalNiveauxReussis = 0,
@@ -558,6 +561,7 @@ namespace MyDemonList.Web.Components.Pages
         {
             public int Id { get; set; }
             public string? Nom { get; set; }
+            public string? CodePays { get; set; }
             public string? AvatarUrl { get; set; }
             public int TotalPoints { get; set; }
             public int TotalNiveauxReussis { get; set; }
@@ -569,6 +573,7 @@ namespace MyDemonList.Web.Components.Pages
         {
             public int Id { get; set; }
             public string? Nom { get; set; }
+            public string? CodePays { get; set; }
             public string? AvatarUrl { get; set; }
             public int NombreNiveaux { get; set; }
             public int Classement { get; set; }

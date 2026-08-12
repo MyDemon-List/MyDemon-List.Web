@@ -100,13 +100,15 @@
         : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
 
     private string UrlCanonique => ObtenirUrlLocalisee(CheminCanonique, CodeLangue);
-    private string UrlParDefaut => ObtenirUrlLocalisee(CheminParDefaut ?? CheminCanonique, "fr");
+    private string UrlParDefaut => ObtenirUrlLocalisee(CheminParDefaut ?? CheminCanonique, "en");
     private string UrlImage => ObtenirUrlAbsolue(CheminImage, conserverRequete: true);
-    private string CodeLangue => (Langue ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName).ToLowerInvariant() switch
+    private string CodeLangue => (Langue
+        ?? SeoUtils.ObtenirLangueDuChemin(new Uri(NavigationManager.Uri).AbsolutePath)
+        ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName).ToLowerInvariant() switch
     {
-        "en" => "en",
+        "fr" => "fr",
         "es" => "es",
-        _ => "fr"
+        _ => "en"
     };
     private string LocaleCourante => LocaleOpenGraph ?? ObtenirLocale(CodeLangue);
     private string TypeImage => Path.GetExtension(new Uri(UrlImage).AbsolutePath).ToLowerInvariant() switch
@@ -130,13 +132,13 @@
     private string ObtenirUrlLocalisee(string chemin, string langue)
     {
         string url = ObtenirUrlAbsolue(chemin);
-        return langue.Equals("fr", StringComparison.OrdinalIgnoreCase) ? url : $"{url}?lang={langue}";
+        return SeoUtils.LocaliserChemin(url, langue);
     }
 
     private static string ObtenirLocale(string langue) => langue switch
     {
-        "en" => "en_US",
+        "fr" => "fr_FR",
         "es" => "es_ES",
-        _ => "fr_FR"
+        _ => "en_US"
     };
 }

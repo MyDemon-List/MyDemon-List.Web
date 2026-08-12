@@ -83,6 +83,9 @@ namespace MyDemonList.Web.Services
             if (nomPris)
                 return (false, "Le nom à conserver est déjà utilisé par un autre compte, la fusion est annulée.");
 
+            if (string.IsNullOrWhiteSpace(cible.CodePays))
+                cible.CodePays = demandeur.CodePays;
+
             await dbContext.DiscordAccounts
                 .Where(a => a.UtilisateurId == demandeur.Id)
                 .ExecuteUpdateAsync(s => s.SetProperty(a => a.UtilisateurId, cible.Id));

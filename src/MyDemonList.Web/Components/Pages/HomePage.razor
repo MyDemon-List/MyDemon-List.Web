@@ -1,4 +1,7 @@
 @page "/"
+@page "/fr"
+@page "/en"
+@page "/es"
 @inject Traductions Texte
 
 <SeoHead Titre="@Texte["SeoAccueilTitre", "My Demon List — Créez et partagez vos demon lists Geometry Dash"]"
@@ -25,7 +28,7 @@
                         <h1>@Texte["MesDemonLists", "Mes demon lists"]</h1>
                         <p>@Texte["MesDemonListsDescription", "Retrouvez les listes que vous possédez ou que vous pouvez gérer."]</p>
                     </div>
-                    <button type="button" class="btn btn-creer" @onclick="ToggleFormulaireCreation">
+                    <button type="button" class="btn btn-creer @(_afficherFormulaireCreation ? "btn-fermer" : null)" @onclick="ToggleFormulaireCreation">
                         @if (!_afficherFormulaireCreation)
                         {
                             <span class="btn-plus" aria-hidden="true">+</span>
@@ -65,7 +68,7 @@
                     }
                     else
                     {
-                        <div class="carte-formulaire">
+                        <div class="carte-formulaire carte-formulaire--creation">
                             <div class="formulaire-entete">
                                 <h2>@Texte["NouvelleDemonList", "Nouvelle demon list"]</h2>
                                 <p>@Texte["NouvelleDemonListDescription", "Donnez-lui un nom et choisissez si elle sera visible par tous."]</p>
@@ -85,39 +88,41 @@
                                 </div>
                             </div>
 
-                            <div class="champ-checkbox">
-                                <label class="option-publique">
-                                    <input type="checkbox" @bind="_nouvelleEstPublique" />
-                                    <span class="case-personnalisee" aria-hidden="true"></span>
-                                    <span class="option-publique-texte">
-                                        <strong>@Texte["ListePublique", "Liste publique"]</strong>
-                                        <small>@Texte["ListePubliqueAide", "Elle apparaîtra dans les listes de la communauté."]</small>
-                                    </span>
-                                </label>
-                            </div>
-
                             @if (!string.IsNullOrWhiteSpace(_erreurCreation))
                             {
                                 <div class="alert alert-error">@_erreurCreation</div>
                             }
 
-                            <div class="actions-formulaire">
-                                <button type="button" class="btn" @onclick="CreerListe" disabled="@_creationEnCours">
-                                    @(_creationEnCours ? Texte["Creation", "Création..."] : Texte["CreerListe", "Créer la liste"])
-                                </button>
+                            <div class="pied-formulaire">
+                                <div class="champ-checkbox">
+                                    <label class="option-publique">
+                                        <input type="checkbox" @bind="_nouvelleEstPublique" />
+                                        <span class="case-personnalisee" aria-hidden="true"></span>
+                                        <span class="option-publique-texte">
+                                            <strong>@Texte["ListePublique", "Liste publique"]</strong>
+                                            <small>@Texte["ListePubliqueAide", "Elle apparaîtra dans les listes de la communauté."]</small>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div class="actions-formulaire">
+                                    <button type="button" class="btn" @onclick="CreerListe" disabled="@_creationEnCours">
+                                        @(_creationEnCours ? Texte["Creation", "Création..."] : Texte["CreerListe", "Créer la liste"])
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     }
                 }
 
-                @if (_listesPossedees.Count == 0)
+                @if (_listesPossedees.Count == 0 && !_afficherFormulaireCreation)
                 {
                     <div class="aucune-liste">
                         <strong>@Texte["AucuneListe", "Aucune liste pour le moment"]</strong>
                         <span>@Texte["AucuneListeAide", "Créez votre première demon list pour commencer."]</span>
                     </div>
                 }
-                else
+                else if (_listesPossedees.Count > 0)
                 {
                     <div class="grille-listes">
                         @foreach (Liste liste in _listesPossedees)

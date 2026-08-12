@@ -1,5 +1,8 @@
 @page "/profil"
 @page "/profile"
+@page "/fr/profil"
+@page "/en/profil"
+@page "/es/profil"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize]
@@ -31,7 +34,13 @@
                     <header class="profil-entete">
                         <img class="avatar" src="@_avatarUrl" alt="Avatar Discord" />
                         <div class="profil-identite">
-                            <h1>@_nomActuel</h1>
+                            <div class="profil-nom-ligne">
+                                <h1>@_nomActuel</h1>
+                                @if (_codePaysActuel is not null)
+                                {
+                                    <img class="drapeau-profil" src="@PaysUtils.ObtenirUrlDrapeau(_codePaysActuel)" alt="@PaysUtils.ObtenirNom(_codePaysActuel)" title="@PaysUtils.ObtenirNom(_codePaysActuel)" />
+                                }
+                            </div>
                             <div class="discord-infos">
                                 <div class="discord-info">
                                     <span class="discord-label">@Texte["NomDiscord", "Nom Discord"]</span>
@@ -77,6 +86,88 @@
                         @if (!string.IsNullOrWhiteSpace(_succes))
                         {
                             <div class="alert alert-success">@_succes</div>
+                        }
+                    </section>
+
+                    <section class="profil-section">
+                        <div class="section-entete">
+                            <h2>@Texte["Drapeau", "Drapeau"]</h2>
+                            <p>@Texte["DrapeauAide", "Affiché à côté de votre nom dans les classements. Vous pouvez modifier la suggestion faite lors de votre connexion."]</p>
+                        </div>
+
+                        <div class="drapeau-form">
+                            <div class="selecteur-drapeau">
+                                <button type="button"
+                                        class="selecteur-drapeau-declencheur @(_selecteurDrapeauOuvert ? "ouvert" : null)"
+                                        aria-haspopup="listbox"
+                                        aria-expanded="@_selecteurDrapeauOuvert"
+                                        aria-label="@(PaysSelectionne?.Nom ?? Texte["ChoisirDrapeau", "Choisir un drapeau"])"
+                                        title="@(PaysSelectionne?.Nom ?? Texte["ChoisirDrapeau", "Choisir un drapeau"])"
+                                        @onclick="BasculerSelecteurDrapeau">
+                                    @if (PaysSelectionne is not null)
+                                    {
+                                        <img class="drapeau-selectionne" src="@PaysSelectionne.UrlDrapeau" alt="" />
+                                    }
+                                    else
+                                    {
+                                        <span class="drapeau-selectionne-vide" aria-hidden="true">🌐</span>
+                                    }
+                                    <span class="chevron-drapeau" aria-hidden="true"></span>
+                                </button>
+
+                                @if (_selecteurDrapeauOuvert)
+                                {
+                                    <div class="menu-drapeaux">
+                                        <input class="input recherche-pays"
+                                               value="@_recherchePays"
+                                               @oninput="RechercherPays"
+                                               placeholder="@Texte["RechercherPays", "Rechercher un pays..."]"
+                                               aria-label="@Texte["RechercherPays", "Rechercher un pays..."]" />
+
+                                        <div class="grille-drapeaux" role="listbox" aria-label="@Texte["ChoisirDrapeau", "Choisir un drapeau"]">
+                                            @foreach (PaysUtils.Pays pays in PaysFiltres)
+                                            {
+                                                <button type="button"
+                                                        class="option-drapeau @(pays.Code == _codePays ? "selectionnee" : null)"
+                                                        role="option"
+                                                        aria-selected="@(pays.Code == _codePays)"
+                                                        aria-label="@pays.Nom"
+                                                        title="@pays.Nom"
+                                                        @onclick="() => SelectionnerPays(pays)">
+                                                    <img src="@pays.UrlDrapeau" alt="" loading="lazy" />
+                                                    <span class="nom-pays">@pays.Nom</span>
+                                                </button>
+                                            }
+                                        </div>
+
+                                        @if (!PaysFiltres.Any())
+                                        {
+                                            <div class="aucun-pays">@Texte["AucunPaysTrouve", "Aucun pays trouvé."]</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <button type="button" class="btn" @onclick="EnregistrerDrapeau" disabled="@(_savingDrapeau || _codePays == _codePaysActuel)">
+                                @if (_savingDrapeau)
+                                {
+                                    <span class="spinner" aria-hidden="true"></span>
+                                    <span>@Texte["Enregistrement", "Enregistrement..."]</span>
+                                }
+                                else
+                                {
+                                    <span>@Texte["Enregistrer", "Enregistrer"]</span>
+                                }
+                            </button>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(_validationDrapeau))
+                        {
+                            <div class="alert alert-error">@_validationDrapeau</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_succesDrapeau))
+                        {
+                            <div class="alert alert-success">@_succesDrapeau</div>
                         }
                     </section>
 

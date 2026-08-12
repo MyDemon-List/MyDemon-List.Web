@@ -152,6 +152,10 @@
 }
 
 .utilisateur-groupe-nom {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
     padding: 0.25rem 0.55rem;
     border-radius: var(--radius-pill);
     transition: background 0.2s ease, box-shadow 0.2s ease;
@@ -215,6 +219,27 @@
     box-sizing: border-box;
     margin: 0 auto;
     padding: 28px clamp(20px, 3vw, 44px) 56px;
+}
+
+.utilisateur-groupe-nom > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.drapeau-joueur {
+    width: 20px;
+    height: 15px;
+    flex: 0 0 auto;
+    border-radius: 2px;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px var(--white-18);
+}
+
+.drapeau-joueur--grand {
+    width: 30px;
+    height: 22px;
+    border-radius: 3px;
 }
 
 .profil-joueur {
