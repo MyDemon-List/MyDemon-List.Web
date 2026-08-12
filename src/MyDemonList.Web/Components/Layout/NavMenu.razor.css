@@ -311,6 +311,15 @@ nav a.nav-item {
     opacity: .95;
 }
 
+.drapeau-compte {
+    width: 22px;
+    height: 16px;
+    flex: 0 0 auto;
+    border-radius: 2px;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px var(--white-18);
+}
+
 .chevron {
     width: 16px;
     height: 16px;

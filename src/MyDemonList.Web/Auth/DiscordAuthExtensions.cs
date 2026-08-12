@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
+using MyDemonList.Web.Utils;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
@@ -103,6 +104,7 @@ public static class DiscordAuthExtensions
                                 ? gl.GetString()
                                 : discordUsername;
                         string? avatar = user.TryGetProperty("avatar", out JsonElement av) ? av.GetString() : null;
+                        string? codePaysSuggere = PaysUtils.DevinerCodePays(ctx.HttpContext.Request.Headers.AcceptLanguage.ToString());
 
                         MyDemonListWebDbContext db = ctx.HttpContext.RequestServices.GetRequiredService<MyDemonListWebDbContext>();
                         DiscordAccount? account = await db.DiscordAccounts
@@ -121,7 +123,8 @@ public static class DiscordAuthExtensions
                                 AvatarHash = avatar,
                                 Utilisateur = new Utilisateur
                                 {
-                                    Nom = nomDisponible
+                                    Nom = nomDisponible,
+                                    CodePays = codePaysSuggere
                                 },
                             };
                             db.DiscordAccounts.Add(account);
@@ -131,9 +134,12 @@ public static class DiscordAuthExtensions
                             account.DiscordUsername = discordUsername;
                             account.DiscordDisplayName = displayName;
                             account.AvatarHash = avatar;
+                            if (account.Utilisateur is not null && string.IsNullOrWhiteSpace(account.Utilisateur.CodePays))
+                                account.Utilisateur.CodePays = codePaysSuggere;
                         }
 
                         await db.SaveChangesAsync();
+                        ctx.HttpContext.RequestServices.GetRequiredService<Chargement>().ClearCacheUtilisateurs();
 
                         ClaimsIdentity id = ctx.Identity!;
                         id.AddClaim(new Claim("discord:id", discordId));

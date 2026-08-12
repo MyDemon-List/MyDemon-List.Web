@@ -162,6 +162,10 @@
                         <label for="compte-open" class="compte-toggle" role="button" aria-haspopup="menu" aria-controls="menu-compte">
                             <img class="avatar-discord" src="@avatarUrl" alt="@Texte.Formater("AvatarDe", "Avatar de {0}", name)" />
                             <span class="texte-compte">@name</span>
+                            @if (_codePays is not null)
+                            {
+                                <img class="drapeau-compte" src="@PaysUtils.ObtenirUrlDrapeau(_codePays)" alt="@PaysUtils.ObtenirNom(_codePays)" title="@PaysUtils.ObtenirNom(_codePays)" />
+                            }
                             <span class="etat @_statusClass" aria-label="@Texte["Statut", "Statut"]"></span>
                             <span class="chevron" aria-hidden="true"></span>
                         </label>

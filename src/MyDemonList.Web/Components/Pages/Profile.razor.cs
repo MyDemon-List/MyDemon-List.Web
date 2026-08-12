@@ -6,6 +6,7 @@ using System.Security.Claims;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
 using MyDemonList.Web.Services;
+using MyDemonList.Web.Utils;
 
 namespace MyDemonList.Web.Components.Pages
 {
@@ -32,6 +33,12 @@ namespace MyDemonList.Web.Components.Pages
         [Inject]
         private NotificationService NotificationService { get; set; } = default!;
 
+        [Inject]
+        private Chargement Chargement { get; set; } = default!;
+
+        [Inject]
+        private ProfilUtilisateurSignalService ProfilSignal { get; set; } = default!;
+
         private bool _isLoading = true;
         private bool _saving = false;
         private string? _erreur;
@@ -52,6 +59,14 @@ namespace MyDemonList.Web.Components.Pages
         private string? _avatarUrl;
         private string? _discordUsername;
         private string? _discordDisplayName;
+        private IReadOnlyList<PaysUtils.Pays> _paysDisponibles = [];
+        private string? _codePays;
+        private string? _codePaysActuel;
+        private string _recherchePays = string.Empty;
+        private bool _selecteurDrapeauOuvert;
+        private bool _savingDrapeau;
+        private string? _validationDrapeau;
+        private string? _succesDrapeau;
 
         private int _utilisateurId;
         private string _nom = string.Empty;
@@ -61,10 +76,20 @@ namespace MyDemonList.Web.Components.Pages
         private FusionAffichage? _demandeSortante;
         private List<FusionAffichage> _demandesEntrantes = new();
 
+        private PaysUtils.Pays? PaysSelectionne =>
+            _paysDisponibles.FirstOrDefault(p => p.Code.Equals(_codePays, StringComparison.OrdinalIgnoreCase));
+
+        private IEnumerable<PaysUtils.Pays> PaysFiltres => string.IsNullOrWhiteSpace(_recherchePays)
+            ? _paysDisponibles
+            : _paysDisponibles.Where(p =>
+                p.Nom.Contains(_recherchePays, StringComparison.CurrentCultureIgnoreCase) ||
+                p.Code.Contains(_recherchePays, StringComparison.OrdinalIgnoreCase));
+
         protected override async Task OnInitializedAsync()
         {
             try
             {
+                _paysDisponibles = PaysUtils.ObtenirPays();
                 AuthenticationState authState = await AuthProvider.GetAuthenticationStateAsync();
                 ClaimsPrincipal user = authState.User;
 
@@ -107,6 +132,8 @@ namespace MyDemonList.Web.Components.Pages
                     _utilisateurId = account.Utilisateur.Id;
                     _nom = account.Utilisateur.Nom ?? string.Empty;
                     _nomActuel = _nom;
+                    _codePays = PaysUtils.NormaliserCode(account.Utilisateur.CodePays);
+                    _codePaysActuel = _codePays;
                 }
 
                 await ChargerDemandesFusion();
@@ -209,6 +236,70 @@ namespace MyDemonList.Web.Components.Pages
             finally
             {
                 _saving = false;
+            }
+        }
+
+        private void BasculerSelecteurDrapeau()
+        {
+            _selecteurDrapeauOuvert = !_selecteurDrapeauOuvert;
+            _recherchePays = string.Empty;
+        }
+
+        private void RechercherPays(ChangeEventArgs evenement)
+        {
+            _recherchePays = evenement.Value?.ToString() ?? string.Empty;
+        }
+
+        private void SelectionnerPays(PaysUtils.Pays pays)
+        {
+            _codePays = pays.Code;
+            _selecteurDrapeauOuvert = false;
+            _recherchePays = string.Empty;
+            _validationDrapeau = null;
+            _succesDrapeau = null;
+        }
+
+        private async Task EnregistrerDrapeau()
+        {
+            _validationDrapeau = _succesDrapeau = null;
+            string? codePays = PaysUtils.NormaliserCode(_codePays);
+
+            if (codePays is null)
+            {
+                _validationDrapeau = Texte["DrapeauRequis", "Choisissez un drapeau."];
+                return;
+            }
+
+            if (codePays == _codePaysActuel) return;
+
+            try
+            {
+                _savingDrapeau = true;
+                using MyDemonListWebDbContext dbContext = new(DbContextOptions);
+                Utilisateur? utilisateur = await dbContext.Utilisateurs.FindAsync(_utilisateurId);
+
+                if (utilisateur is null)
+                {
+                    _validationDrapeau = Texte["UtilisateurIntrouvable", "Utilisateur introuvable."];
+                    return;
+                }
+
+                utilisateur.CodePays = codePays;
+                await dbContext.SaveChangesAsync();
+
+                _codePays = codePays;
+                _codePaysActuel = codePays;
+                _succesDrapeau = Texte["DrapeauMisAJour", "Drapeau mis à jour."];
+                Chargement.ClearCacheUtilisateurs();
+                ProfilSignal.SignalerDrapeauModifie(_utilisateurId, codePays);
+            }
+            catch (Exception ex)
+            {
+                _validationDrapeau = Texte.Formater("EnregistrementImpossible", "Impossible d’enregistrer : {0}", ex.Message);
+            }
+            finally
+            {
+                _savingDrapeau = false;
             }
         }
 

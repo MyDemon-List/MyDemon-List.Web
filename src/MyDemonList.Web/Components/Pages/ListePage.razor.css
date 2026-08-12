@@ -926,9 +926,21 @@
 }
 
 .win-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     color: var(--white);
     cursor: pointer;
     text-decoration: none;
+}
+
+.win-drapeau {
+    width: 22px;
+    height: 16px;
+    flex: 0 0 auto;
+    border-radius: 2px;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px var(--white-18);
 }
 
 .win-user:hover {

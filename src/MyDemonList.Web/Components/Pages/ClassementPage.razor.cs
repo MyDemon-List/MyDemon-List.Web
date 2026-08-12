@@ -393,6 +393,7 @@ namespace MyDemonList.Web.Components.Pages
                 {
                     Id = u.Id,
                     Nom = u.Nom,
+                    CodePays = u.CodePays,
                     AvatarUrl = _avatarUrlParUtilisateurId.GetValueOrDefault(u.Id),
                     TotalPoints = PointsVerifieur(u.Id) + PointsReussis(u.Id),
                     TotalNiveauxReussis = TotalNiveauxReussis(u.Id),
@@ -431,6 +432,7 @@ namespace MyDemonList.Web.Components.Pages
                 {
                     Id = u.Id,
                     Nom = u.Nom,
+                    CodePays = u.CodePays,
                     AvatarUrl = _avatarUrlParUtilisateurId.GetValueOrDefault(u.Id),
                     NombreNiveaux = _listeCreateurs.Count(cn => cn.CreateurId == u.Id)
                 })
@@ -469,6 +471,7 @@ namespace MyDemonList.Web.Components.Pages
                     {
                         Id = c.Id,
                         Nom = c.Nom,
+                        CodePays = c.CodePays,
                         AvatarUrl = c.AvatarUrl,
                         TotalPoints = 0,
                         TotalNiveauxReussis = 0,
@@ -558,6 +561,7 @@ namespace MyDemonList.Web.Components.Pages
         {
             public int Id { get; set; }
             public string? Nom { get; set; }
+            public string? CodePays { get; set; }
             public string? AvatarUrl { get; set; }
             public int TotalPoints { get; set; }
             public int TotalNiveauxReussis { get; set; }
@@ -569,6 +573,7 @@ namespace MyDemonList.Web.Components.Pages
         {
             public int Id { get; set; }
             public string? Nom { get; set; }
+            public string? CodePays { get; set; }
             public string? AvatarUrl { get; set; }
             public int NombreNiveaux { get; set; }
             public int Classement { get; set; }

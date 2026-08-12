@@ -128,6 +128,11 @@ namespace MyDemonList.Web.Utils
             _cache.Remove(KEY_FEATURES);
         }
 
+        public void ClearCacheUtilisateurs()
+        {
+            _cache.Remove(KEY_UTILISATEURS);
+        }
+
         public void ClearCache(int listeId)
         {
             _cache.Remove($"{KEY_CLASSEMENTS}_{listeId}");
