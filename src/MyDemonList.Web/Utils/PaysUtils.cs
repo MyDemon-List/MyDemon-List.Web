@@ -31,12 +31,17 @@ public static class PaysUtils
             ["zh"] = "CN"
         };
 
-    private static readonly string[] CodesPays = CultureInfo
+    private static readonly IReadOnlyDictionary<string, string> CulturesParCodePays = CultureInfo
         .GetCultures(CultureTypes.SpecificCultures)
-        .Select(ObtenirCodeRegion)
-        .Where(code => code is not null)
-        .Cast<string>()
-        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .Select(culture => new { culture.Name, Code = ObtenirCodeRegion(culture) })
+        .Where(element => element.Code is not null)
+        .GroupBy(element => element.Code!, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(
+            groupe => groupe.Key,
+            groupe => groupe.First().Name,
+            StringComparer.OrdinalIgnoreCase);
+
+    private static readonly string[] CodesPays = CulturesParCodePays.Keys
         .Order(StringComparer.Ordinal)
         .ToArray();
 
@@ -45,11 +50,7 @@ public static class PaysUtils
     public static IReadOnlyList<Pays> ObtenirPays()
     {
         return CodesPays
-            .Select(code =>
-            {
-                RegionInfo region = new(code);
-                return new Pays(code, region.DisplayName, ObtenirUrlDrapeau(code)!);
-            })
+            .Select(code => new Pays(code, ObtenirRegion(code)!.DisplayName, ObtenirUrlDrapeau(code)!))
             .OrderBy(pays => pays.Nom, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
     }
@@ -66,7 +67,7 @@ public static class PaysUtils
     public static string? ObtenirNom(string? code)
     {
         string? normalise = NormaliserCode(code);
-        return normalise is null ? null : new RegionInfo(normalise).DisplayName;
+        return normalise is null ? null : ObtenirRegion(normalise)?.DisplayName;
     }
 
     public static string? DevinerCodePays(string? languesAcceptees)
@@ -101,6 +102,20 @@ public static class PaysUtils
         {
             string code = new RegionInfo(culture.Name).TwoLetterISORegionName.ToUpperInvariant();
             return code.Length == 2 && code.All(char.IsLetter) ? code : null;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    private static RegionInfo? ObtenirRegion(string code)
+    {
+        if (!CulturesParCodePays.TryGetValue(code, out string? nomCulture)) return null;
+
+        try
+        {
+            return new RegionInfo(nomCulture);
         }
         catch (ArgumentException)
         {
