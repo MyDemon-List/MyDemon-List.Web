@@ -70,13 +70,8 @@ namespace MyDemonList.Web.Components.Pages
         private string? _codePaysActuel;
         private string _recherchePays = string.Empty;
         private bool _selecteurDrapeauOuvert;
-        private bool _savingDrapeau;
-        private string? _validationDrapeau;
-        private string? _succesDrapeau;
         private string _languePreferee = "en";
         private string? _languePrefereeActuelle;
-        private bool _savingLangue;
-        private string? _validationLangue;
 
         private int _utilisateurId;
         private string _nom = string.Empty;
@@ -101,6 +96,11 @@ namespace MyDemonList.Web.Components.Pages
             new("en", Texte["Anglais", "Anglais"]),
             new("es", Texte["Espagnol", "Espagnol"])
         ];
+
+        private bool ProfilModifie =>
+            !string.Equals(_nom.Trim(), _nomActuel, StringComparison.Ordinal)
+            || !string.Equals(PaysUtils.NormaliserCode(_codePays), _codePaysActuel, StringComparison.Ordinal)
+            || !string.Equals(NormaliserLangue(_languePreferee), _languePrefereeActuelle, StringComparison.Ordinal);
 
         protected override async Task OnInitializedAsync()
         {
@@ -194,10 +194,12 @@ namespace MyDemonList.Web.Components.Pages
                 _demandesEntrantes.Add(await Vers(f));
         }
 
-        private async Task EnregistrerNom()
+        private async Task EnregistrerProfil()
         {
             _validation = _succes = null;
             string nouveau = (_nom ?? string.Empty).Trim();
+            string? codePays = PaysUtils.NormaliserCode(_codePays);
+            string? langue = NormaliserLangue(_languePreferee);
 
             if (string.IsNullOrWhiteSpace(nouveau))
             {
@@ -211,8 +213,19 @@ namespace MyDemonList.Web.Components.Pages
                 return;
             }
 
-            if (nouveau == _nomActuel)
+            if (codePays is null)
+            {
+                _validation = Texte["DrapeauRequis", "Choisissez un drapeau."];
                 return;
+            }
+
+            if (langue is null)
+            {
+                _validation = Texte["LangueInvalide", "Choisissez une langue disponible."];
+                return;
+            }
+
+            if (!ProfilModifie) return;
 
             try
             {
@@ -237,11 +250,33 @@ namespace MyDemonList.Web.Components.Pages
                         return;
                     }
 
+                    bool drapeauModifie = !string.Equals(codePays, _codePaysActuel, StringComparison.Ordinal);
+                    bool langueModifiee = !string.Equals(langue, _languePrefereeActuelle, StringComparison.Ordinal);
+
                     utilisateur.Nom = nouveau;
+                    utilisateur.CodePays = codePays;
+                    utilisateur.LanguePreferee = langue;
                     await dbContext.SaveChangesAsync();
 
+                    _nom = nouveau;
                     _nomActuel = nouveau;
-                    _succes = Texte["NomMisAJour", "Nom mis à jour."];
+                    _codePays = codePays;
+                    _codePaysActuel = codePays;
+                    _languePreferee = langue;
+                    _languePrefereeActuelle = langue;
+                    _succes = Texte["ProfilMisAJour", "Profil mis à jour."];
+                    Chargement.ClearCacheUtilisateurs();
+
+                    if (drapeauModifie)
+                        ProfilSignal.SignalerDrapeauModifie(_utilisateurId, codePays);
+
+                    if (langueModifiee)
+                    {
+                        Uri uri = new(NavigationManager.Uri);
+                        string chemin = SeoUtils.RetirerPrefixeLangue(uri.AbsolutePath);
+                        string destination = $"{SeoUtils.LocaliserChemin(chemin, langue)}{uri.Query}{uri.Fragment}";
+                        NavigationManager.NavigateTo(destination, forceLoad: true, replace: true);
+                    }
                 }
             }
             catch (DbUpdateException)
@@ -269,107 +304,24 @@ namespace MyDemonList.Web.Components.Pages
             _recherchePays = evenement.Value?.ToString() ?? string.Empty;
         }
 
+        private void ModifierNom(ChangeEventArgs evenement)
+        {
+            _nom = evenement.Value?.ToString() ?? string.Empty;
+            _validation = _succes = null;
+        }
+
         private void SelectionnerPays(PaysUtils.Pays pays)
         {
             _codePays = pays.Code;
             _selecteurDrapeauOuvert = false;
             _recherchePays = string.Empty;
-            _validationDrapeau = null;
-            _succesDrapeau = null;
-        }
-
-        private async Task EnregistrerDrapeau()
-        {
-            _validationDrapeau = _succesDrapeau = null;
-            string? codePays = PaysUtils.NormaliserCode(_codePays);
-
-            if (codePays is null)
-            {
-                _validationDrapeau = Texte["DrapeauRequis", "Choisissez un drapeau."];
-                return;
-            }
-
-            if (codePays == _codePaysActuel) return;
-
-            try
-            {
-                _savingDrapeau = true;
-                using MyDemonListWebDbContext dbContext = new(DbContextOptions);
-                Utilisateur? utilisateur = await dbContext.Utilisateurs.FindAsync(_utilisateurId);
-
-                if (utilisateur is null)
-                {
-                    _validationDrapeau = Texte["UtilisateurIntrouvable", "Utilisateur introuvable."];
-                    return;
-                }
-
-                utilisateur.CodePays = codePays;
-                await dbContext.SaveChangesAsync();
-
-                _codePays = codePays;
-                _codePaysActuel = codePays;
-                _succesDrapeau = Texte["DrapeauMisAJour", "Drapeau mis à jour."];
-                Chargement.ClearCacheUtilisateurs();
-                ProfilSignal.SignalerDrapeauModifie(_utilisateurId, codePays);
-            }
-            catch (Exception ex)
-            {
-                _validationDrapeau = Texte.Formater("EnregistrementImpossible", "Impossible d’enregistrer : {0}", ex.Message);
-            }
-            finally
-            {
-                _savingDrapeau = false;
-            }
+            _validation = _succes = null;
         }
 
         private void SelectionnerLangue(string langue)
         {
             _languePreferee = langue;
-            _validationLangue = null;
-        }
-
-        private async Task EnregistrerLangue()
-        {
-            _validationLangue = null;
-            string? langue = NormaliserLangue(_languePreferee);
-
-            if (langue is null)
-            {
-                _validationLangue = Texte["LangueInvalide", "Choisissez une langue disponible."];
-                return;
-            }
-
-            if (langue == _languePrefereeActuelle) return;
-
-            try
-            {
-                _savingLangue = true;
-                using MyDemonListWebDbContext dbContext = new(DbContextOptions);
-                Utilisateur? utilisateur = await dbContext.Utilisateurs.FindAsync(_utilisateurId);
-
-                if (utilisateur is null)
-                {
-                    _validationLangue = Texte["UtilisateurIntrouvable", "Utilisateur introuvable."];
-                    return;
-                }
-
-                utilisateur.LanguePreferee = langue;
-                await dbContext.SaveChangesAsync();
-                _languePrefereeActuelle = langue;
-
-                Uri uri = new(NavigationManager.Uri);
-                string chemin = SeoUtils.RetirerPrefixeLangue(uri.AbsolutePath);
-                string destination = $"{SeoUtils.LocaliserChemin(chemin, langue)}{uri.Query}{uri.Fragment}";
-                NavigationManager.NavigateTo(destination, forceLoad: true, replace: true);
-            }
-            catch (Exception ex)
-            {
-                _validationLangue = Texte.Formater("EnregistrementImpossible", "Impossible d’enregistrer : {0}", ex.Message);
-            }
-            finally
-            {
-                _savingLangue = false;
-            }
+            _validation = _succes = null;
         }
 
         private static string? NormaliserLangue(string? langue)
