@@ -115,8 +115,6 @@ builder.Services.Configure<Microsoft.AspNetCore.SignalR.HubOptions>(options =>
 });
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddSingleton<DiscordPresenceService>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<DiscordPresenceService>());
 builder.Services.AddDiscordAuthentication(builder.Configuration);
 builder.Services.AddDataProtection()
                 .PersistKeysToFileSystem(new DirectoryInfo("/var/mydemonlist/keys"))
