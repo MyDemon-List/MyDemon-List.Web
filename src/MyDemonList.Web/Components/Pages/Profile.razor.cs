@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
+using MyDemonList.Web.Localization;
 using MyDemonList.Web.Services;
 using MyDemonList.Web.Utils;
 
@@ -20,6 +21,8 @@ namespace MyDemonList.Web.Components.Pages
             string NomConserve,
             string? Motif,
             DateTime DateDemande);
+
+        public record LangueAffichage(string Code, string Nom);
 
         [Inject]
         private DbContextOptions<MyDemonListWebDbContext> DbContextOptions { get; set; } = default!;
@@ -38,6 +41,9 @@ namespace MyDemonList.Web.Components.Pages
 
         [Inject]
         private ProfilUtilisateurSignalService ProfilSignal { get; set; } = default!;
+
+        [Inject]
+        private NavigationManager NavigationManager { get; set; } = default!;
 
         private bool _isLoading = true;
         private bool _saving = false;
@@ -67,6 +73,10 @@ namespace MyDemonList.Web.Components.Pages
         private bool _savingDrapeau;
         private string? _validationDrapeau;
         private string? _succesDrapeau;
+        private string _languePreferee = "en";
+        private string? _languePrefereeActuelle;
+        private bool _savingLangue;
+        private string? _validationLangue;
 
         private int _utilisateurId;
         private string _nom = string.Empty;
@@ -84,6 +94,13 @@ namespace MyDemonList.Web.Components.Pages
             : _paysDisponibles.Where(p =>
                 p.Nom.Contains(_recherchePays, StringComparison.CurrentCultureIgnoreCase) ||
                 p.Code.Contains(_recherchePays, StringComparison.OrdinalIgnoreCase));
+
+        private IReadOnlyList<LangueAffichage> LanguesDisponibles =>
+        [
+            new("fr", Texte["Francais", "Français"]),
+            new("en", Texte["Anglais", "Anglais"]),
+            new("es", Texte["Espagnol", "Espagnol"])
+        ];
 
         protected override async Task OnInitializedAsync()
         {
@@ -134,6 +151,8 @@ namespace MyDemonList.Web.Components.Pages
                     _nomActuel = _nom;
                     _codePays = PaysUtils.NormaliserCode(account.Utilisateur.CodePays);
                     _codePaysActuel = _codePays;
+                    _languePrefereeActuelle = NormaliserLangue(account.Utilisateur.LanguePreferee);
+                    _languePreferee = _languePrefereeActuelle ?? Texte.CodeLangue;
                 }
 
                 await ChargerDemandesFusion();
@@ -301,6 +320,64 @@ namespace MyDemonList.Web.Components.Pages
             {
                 _savingDrapeau = false;
             }
+        }
+
+        private void SelectionnerLangue(string langue)
+        {
+            _languePreferee = langue;
+            _validationLangue = null;
+        }
+
+        private async Task EnregistrerLangue()
+        {
+            _validationLangue = null;
+            string? langue = NormaliserLangue(_languePreferee);
+
+            if (langue is null)
+            {
+                _validationLangue = Texte["LangueInvalide", "Choisissez une langue disponible."];
+                return;
+            }
+
+            if (langue == _languePrefereeActuelle) return;
+
+            try
+            {
+                _savingLangue = true;
+                using MyDemonListWebDbContext dbContext = new(DbContextOptions);
+                Utilisateur? utilisateur = await dbContext.Utilisateurs.FindAsync(_utilisateurId);
+
+                if (utilisateur is null)
+                {
+                    _validationLangue = Texte["UtilisateurIntrouvable", "Utilisateur introuvable."];
+                    return;
+                }
+
+                utilisateur.LanguePreferee = langue;
+                await dbContext.SaveChangesAsync();
+                _languePrefereeActuelle = langue;
+
+                Uri uri = new(NavigationManager.Uri);
+                string chemin = SeoUtils.RetirerPrefixeLangue(uri.AbsolutePath);
+                string destination = $"{SeoUtils.LocaliserChemin(chemin, langue)}{uri.Query}{uri.Fragment}";
+                NavigationManager.NavigateTo(destination, forceLoad: true, replace: true);
+            }
+            catch (Exception ex)
+            {
+                _validationLangue = Texte.Formater("EnregistrementImpossible", "Impossible d’enregistrer : {0}", ex.Message);
+            }
+            finally
+            {
+                _savingLangue = false;
+            }
+        }
+
+        private static string? NormaliserLangue(string? langue)
+        {
+            string? code = langue?.Trim().ToLowerInvariant();
+            return code is not null && Traductions.LanguesSupportees.Contains(code, StringComparer.OrdinalIgnoreCase)
+                ? code
+                : null;
         }
 
         private async Task OuvrirPopupFusion()
