@@ -127,23 +127,15 @@
 }
 
 .nom-form {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
+    display: block;
 }
 
 .drapeau-form {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 10px;
+    display: block;
 }
 
 .langue-form {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 10px;
+    display: block;
 }
 
 .options-langues {
@@ -192,6 +184,8 @@
 }
 
 .selecteur-drapeau {
+    position: relative;
+    z-index: 20;
     width: min(100%, 460px);
     min-width: 0;
 }
@@ -240,25 +234,48 @@
 }
 
 .chevron-drapeau {
-    width: 8px;
-    height: 8px;
-    border-right: 2px solid #a9abb4;
-    border-bottom: 2px solid #a9abb4;
-    transform: rotate(45deg) translateY(-2px);
+    width: 0;
+    height: 0;
+    border-top: 5px solid #a9abb4;
+    border-right: 4px solid transparent;
+    border-left: 4px solid transparent;
     transition: transform 0.15s ease;
 }
 
 .selecteur-drapeau-declencheur.ouvert .chevron-drapeau {
-    transform: rotate(225deg) translate(-2px, -2px);
+    transform: rotate(180deg);
 }
 
 .menu-drapeaux {
-    margin-top: 8px;
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
     padding: 10px;
     border: 1px solid #41434c;
     border-radius: var(--radius-md);
     background: #25272d;
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+}
+
+.profil-sauvegarde {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px;
+    border-top: 1px solid #34363d;
+    background: #23252a;
+}
+
+.profil-sauvegarde-message {
+    min-width: 0;
+}
+
+.profil-sauvegarde-message .alert {
+    margin-top: 0;
 }
 
 .recherche-pays {
@@ -631,15 +648,7 @@ select.input {
         flex-direction: column;
     }
 
-    .nom-form {
-        grid-template-columns: 1fr;
-    }
-
-    .drapeau-form {
-        grid-template-columns: 1fr;
-    }
-
-    .langue-form {
+    .profil-sauvegarde {
         grid-template-columns: 1fr;
     }
 
@@ -647,9 +656,7 @@ select.input {
         grid-template-columns: 1fr;
     }
 
-    .nom-form .btn,
-    .drapeau-form > .btn,
-    .langue-form > .btn,
+    .profil-sauvegarde .btn,
     .section-entete--action .btn {
         width: 100%;
     }
