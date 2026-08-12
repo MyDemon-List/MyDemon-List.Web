@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
 using MyDemonList.Web.Services;
+using MyDemonList.Web.Utils;
 using System.Security.Claims;
 
 namespace MyDemonList.Web.Components.Pages
@@ -49,7 +50,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (user.Identity?.IsAuthenticated != true)
             {
-                NavigationManager.NavigateTo("/");
+                NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/", Texte.CodeLangue));
                 return;
             }
 
@@ -67,7 +68,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (compte?.Utilisateur is null)
                 {
-                    NavigationManager.NavigateTo("/");
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/", Texte.CodeLangue));
                     return;
                 }
 
@@ -78,7 +79,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (!_estAutorise)
             {
-                NavigationManager.NavigateTo("/");
+                NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/", Texte.CodeLangue));
                 return;
             }
 

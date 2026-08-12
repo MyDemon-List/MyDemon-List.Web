@@ -77,11 +77,13 @@ namespace MyDemonList.Web.Components.Layout
         private bool _initialisationTerminee;
         private bool _componentDetruit;
         private string? _urlRechargementCulture;
+        private string _langueCourante = "en";
 
         protected override void OnInitialized()
         {
             _currentUri = NavigationManager.Uri;
             _hoveredItem = new Uri(_currentUri).AbsolutePath;
+            _langueCourante = Texte.CodeLangue;
             NavigationManager.LocationChanged += HandleLocationChanged;
             ListeSession.OnChanged += OnListeSessionChanged;
             ProfilSignal.DrapeauModifie += OnDrapeauModifie;
@@ -100,7 +102,7 @@ namespace MyDemonList.Web.Components.Layout
             _currentUri = e.Location;
             _panneauNotificationsOuvert = false;
             string? langueDemandee = ObtenirLangueDemandee(e.Location);
-            if (!_rechargementCultureEnCours && langueDemandee is not null && langueDemandee != Texte.CodeLangue)
+            if (!_rechargementCultureEnCours && langueDemandee is not null && langueDemandee != _langueCourante)
             {
                 if (!_initialisationTerminee)
                 {
@@ -118,16 +120,18 @@ namespace MyDemonList.Web.Components.Layout
 
         private static string? ObtenirLangueDemandee(string url)
         {
+            Uri uri = new(url);
             string? langue = Microsoft.AspNetCore.WebUtilities.QueryHelpers
-                .ParseQuery(new Uri(url).Query)
+                .ParseQuery(uri.Query)
                 .GetValueOrDefault("lang")
                 .FirstOrDefault()?
                 .Trim()
                 .ToLowerInvariant();
 
-            return langue is not null && Traductions.LanguesSupportees.Contains(langue, StringComparer.OrdinalIgnoreCase)
-                ? langue
-                : null;
+            if (langue is not null)
+                return Traductions.LanguesSupportees.Contains(langue, StringComparer.OrdinalIgnoreCase) ? langue : "en";
+
+            return SeoUtils.ObtenirLangueDuChemin(uri.AbsolutePath);
         }
 
         protected override async Task OnInitializedAsync()
@@ -362,8 +366,8 @@ namespace MyDemonList.Web.Components.Layout
             _ => "i"
         };
 
-        private static string FormaterDateNotification(DateTime date) =>
-            date.ToString("g", System.Globalization.CultureInfo.CurrentCulture);
+        private string FormaterDateNotification(DateTime date) =>
+            date.ToString("g", Texte.Culture);
 
         private async Task CheckIfUserIsCreatorAsync()
         {
@@ -440,7 +444,7 @@ namespace MyDemonList.Web.Components.Layout
 
         private static string NormaliserCheminNavigation(string chemin)
         {
-            string valeur = chemin.TrimEnd('/');
+            string valeur = SeoUtils.RetirerPrefixeLangue(chemin).TrimEnd('/');
             if (valeur.EndsWith("/soumettre-une-reussite", StringComparison.OrdinalIgnoreCase)) return "/soumettre-une-reussite";
             if (valeur.EndsWith("/classement", StringComparison.OrdinalIgnoreCase)) return "/classement";
             if (valeur.EndsWith("/gerer", StringComparison.OrdinalIgnoreCase)) return "/liste/gerer";
