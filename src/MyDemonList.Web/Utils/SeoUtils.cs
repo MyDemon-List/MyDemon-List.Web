@@ -49,6 +49,8 @@ namespace MyDemonList.Web.Utils
         public static string LocaliserChemin(string chemin, string langue)
         {
             string code = langue.ToLowerInvariant();
+            if (!MyDemonList.Web.Localization.Traductions.LanguesSupportees.Contains(code, StringComparer.OrdinalIgnoreCase))
+                code = "en";
             if (code == "fr") return chemin;
             return $"{chemin}{(chemin.Contains('?') ? '&' : '?')}lang={Uri.EscapeDataString(code)}";
         }
@@ -63,7 +65,7 @@ namespace MyDemonList.Web.Utils
             return $"{valeur[..coupure].TrimEnd(' ', ',', '.', ';', ':')}…";
         }
 
-        public static string CreerJsonLdAccueil(string urlBase, string? description = null, string langue = "fr")
+        public static string CreerJsonLdAccueil(string urlBase, string? description = null, string langue = "en")
         {
             string racine = urlBase.TrimEnd('/') + "/";
             string urlLocalisee = LocaliserChemin(racine, langue);
