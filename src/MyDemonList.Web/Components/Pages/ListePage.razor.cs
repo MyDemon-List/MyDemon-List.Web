@@ -137,7 +137,7 @@ namespace MyDemonList.Web.Components.Pages
             int? listeIdDemande = ListeId ?? ListeSession.ListeId;
             if (listeIdDemande is not int listeId)
             {
-                NavigationManager.NavigateTo("/");
+                NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/", Texte.CodeLangue));
                 return;
             }
 
@@ -150,7 +150,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (_listeCourante is null || !await PeutConsulterListeAsync(dbContext, _listeCourante))
                 {
-                    NavigationManager.NavigateTo("/404");
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/404", Texte.CodeLangue));
                     return;
                 }
             }
@@ -159,7 +159,7 @@ namespace MyDemonList.Web.Components.Pages
             ListeSession.SetListe(_listeCourante.Id, _listeCourante.Nom, _listeCourante.DiscordServerUrl);
 
             string cheminCanonique = SeoUtils.CheminListe(_listeCourante.Id, _listeCourante.Nom);
-            string cheminActuel = new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/');
+            string cheminActuel = SeoUtils.RetirerPrefixeLangue(new Uri(NavigationManager.Uri).AbsolutePath).TrimEnd('/');
             if (!cheminActuel.Equals(cheminCanonique, StringComparison.OrdinalIgnoreCase))
             {
                 string destination = !string.IsNullOrWhiteSpace(NiveauSelectionne)
@@ -409,7 +409,7 @@ namespace MyDemonList.Web.Components.Pages
             if (_niveauSelectionne is null) return;
 
             string chemin = SeoUtils.CheminSoumission(_listeId, _listeCourante?.Nom ?? ListeSession.ListeNom ?? "demon-list");
-            NavigationManager.NavigateTo($"{chemin}?niveau={Uri.EscapeDataString(_niveauSelectionne.IdDuNiveauDansLeJeu)}");
+            NavigationManager.NavigateTo(SeoUtils.LocaliserChemin($"{chemin}?niveau={Uri.EscapeDataString(_niveauSelectionne.IdDuNiveauDansLeJeu)}", Texte.CodeLangue));
         }
 
         private string ObtenirCheminNiveau(Niveau niveau) =>

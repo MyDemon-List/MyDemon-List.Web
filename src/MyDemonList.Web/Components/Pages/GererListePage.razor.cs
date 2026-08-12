@@ -8,6 +8,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.JSInterop;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
+using MyDemonList.Web.Localization;
 using MyDemonList.Web.Services;
 using MyDemonList.Web.Utils;
 using System.Security.Claims;
@@ -57,6 +58,9 @@ namespace MyDemonList.Web.Components.Pages
 
         [Inject]
         private IJSRuntime JsRuntime { get; set; } = default!;
+
+        [Inject]
+        private Traductions Texte { get; set; } = default!;
 
         private string ObtenirTitrePage() =>
             ListeSession.ListeNom is string nom ? $"{nom} - Gestion de la liste" : "Gestion de la liste";
@@ -173,7 +177,7 @@ namespace MyDemonList.Web.Components.Pages
             int? listeIdDemande = ListeId ?? ListeSession.ListeId;
             if (listeIdDemande is not int lid)
             {
-                NavigationManager.NavigateTo("/");
+                NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/", Texte.CodeLangue));
                 return;
             }
             _listeId = lid;
@@ -183,7 +187,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (user.Identity?.IsAuthenticated != true)
             {
-                NavigationManager.NavigateTo("/liste");
+                NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/liste", Texte.CodeLangue));
                 return;
             }
 
@@ -200,7 +204,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (compte?.Utilisateur is null)
                 {
-                    NavigationManager.NavigateTo("/liste");
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/liste", Texte.CodeLangue));
                     return;
                 }
 
@@ -209,7 +213,7 @@ namespace MyDemonList.Web.Components.Pages
                 Liste? liste = await dbContext.Listes.AsNoTracking().FirstOrDefaultAsync(l => l.Id == _listeId);
                 if (liste is null)
                 {
-                    NavigationManager.NavigateTo("/liste");
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/liste", Texte.CodeLangue));
                     return;
                 }
 
@@ -237,7 +241,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (_roleEffectif is null)
                 {
-                    NavigationManager.NavigateTo(liste.EstPublique ? SeoUtils.CheminListe(liste.Id, liste.Nom) : "/");
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin(liste.EstPublique ? SeoUtils.CheminListe(liste.Id, liste.Nom) : "/", Texte.CodeLangue));
                     return;
                 }
 
@@ -246,10 +250,10 @@ namespace MyDemonList.Web.Components.Pages
                 _listeNom = liste.Nom;
 
                 string cheminCanonique = SeoUtils.CheminGestion(liste.Id, liste.Nom);
-                string cheminActuel = new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/');
+                string cheminActuel = SeoUtils.RetirerPrefixeLangue(new Uri(NavigationManager.Uri).AbsolutePath).TrimEnd('/');
                 if (!cheminActuel.Equals(cheminCanonique, StringComparison.OrdinalIgnoreCase))
                 {
-                    NavigationManager.NavigateTo(cheminCanonique, replace: true);
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin(cheminCanonique, Texte.CodeLangue), replace: true);
                     return;
                 }
             }
@@ -540,7 +544,7 @@ namespace MyDemonList.Web.Components.Pages
             _demandeNiveauxEnCours = _derniereDemandeNiveaux?.Statut == "EnAttente";
         }
 
-        private static string FormaterDuree(TimeSpan duree) => DureeUtils.Formater(duree);
+        private string FormaterDuree(TimeSpan duree) => DureeUtils.Formater(duree, Texte.CodeLangue);
 
         public void Dispose()
         {

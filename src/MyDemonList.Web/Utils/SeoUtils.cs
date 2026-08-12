@@ -48,11 +48,54 @@ namespace MyDemonList.Web.Utils
 
         public static string LocaliserChemin(string chemin, string langue)
         {
-            string code = langue.ToLowerInvariant();
-            if (!MyDemonList.Web.Localization.Traductions.LanguesSupportees.Contains(code, StringComparer.OrdinalIgnoreCase))
-                code = "en";
-            if (code == "fr") return chemin;
-            return $"{chemin}{(chemin.Contains('?') ? '&' : '?')}lang={Uri.EscapeDataString(code)}";
+            string code = NormaliserLangue(langue);
+
+            if (Uri.TryCreate(chemin, UriKind.Absolute, out Uri? uriAbsolue)
+                && (uriAbsolue.Scheme == Uri.UriSchemeHttp || uriAbsolue.Scheme == Uri.UriSchemeHttps))
+            {
+                UriBuilder constructeur = new(uriAbsolue)
+                {
+                    Path = AjouterPrefixeLangue(uriAbsolue.AbsolutePath, code)
+                };
+                return constructeur.Uri.AbsoluteUri;
+            }
+
+            int indexSuffixe = chemin.IndexOfAny(['?', '#']);
+            string cheminSeul = indexSuffixe >= 0 ? chemin[..indexSuffixe] : chemin;
+            string suffixe = indexSuffixe >= 0 ? chemin[indexSuffixe..] : string.Empty;
+            return $"{AjouterPrefixeLangue(cheminSeul, code)}{suffixe}";
+        }
+
+        public static string? ObtenirLangueDuChemin(string chemin)
+        {
+            string premierSegment = chemin.TrimStart('/').Split('/', 2)[0].ToLowerInvariant();
+            return MyDemonList.Web.Localization.Traductions.LanguesSupportees.Contains(premierSegment, StringComparer.OrdinalIgnoreCase)
+                ? premierSegment
+                : null;
+        }
+
+        public static string RetirerPrefixeLangue(string chemin)
+        {
+            string? langue = ObtenirLangueDuChemin(chemin);
+            if (langue is null) return string.IsNullOrWhiteSpace(chemin) ? "/" : chemin;
+
+            string sansPrefixe = chemin[(langue.Length + 1)..];
+            return string.IsNullOrEmpty(sansPrefixe) ? "/" : sansPrefixe;
+        }
+
+        private static string AjouterPrefixeLangue(string chemin, string langue)
+        {
+            string cheminSansLangue = RetirerPrefixeLangue(string.IsNullOrWhiteSpace(chemin) ? "/" : chemin);
+            if (!cheminSansLangue.StartsWith('/')) cheminSansLangue = $"/{cheminSansLangue}";
+            return cheminSansLangue == "/" ? $"/{langue}/" : $"/{langue}{cheminSansLangue}";
+        }
+
+        private static string NormaliserLangue(string langue)
+        {
+            string code = langue.Trim().ToLowerInvariant();
+            return MyDemonList.Web.Localization.Traductions.LanguesSupportees.Contains(code, StringComparer.OrdinalIgnoreCase)
+                ? code
+                : "en";
         }
 
         public static string LimiterDescription(string? description, string valeurParDefaut, int longueurMax = 160)

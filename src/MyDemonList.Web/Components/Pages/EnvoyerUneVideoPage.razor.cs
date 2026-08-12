@@ -144,7 +144,7 @@ namespace MyDemonList.Web.Components.Pages
             int? listeIdDemande = ListeId ?? ListeSession.ListeId;
             if (listeIdDemande is not int listeId)
             {
-                NavigationManager.NavigateTo("/");
+                NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/", Texte.CodeLangue));
                 return;
             }
 
@@ -153,7 +153,7 @@ namespace MyDemonList.Web.Components.Pages
                 _listeCourante = await dbContext.Listes.AsNoTracking().SingleOrDefaultAsync(l => l.Id == listeId) ?? new Liste();
                 if (_listeCourante.Id == 0 || !await PeutConsulterListeAsync(dbContext, _listeCourante))
                 {
-                    NavigationManager.NavigateTo("/404");
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/404", Texte.CodeLangue));
                     return;
                 }
             }
@@ -161,13 +161,13 @@ namespace MyDemonList.Web.Components.Pages
             ListeSession.SetListe(_listeCourante.Id, _listeCourante.Nom, _listeCourante.DiscordServerUrl);
 
             string cheminCanonique = SeoUtils.CheminSoumission(_listeCourante.Id, _listeCourante.Nom);
-            string cheminActuel = new Uri(NavigationManager.Uri).AbsolutePath.TrimEnd('/');
+            string cheminActuel = SeoUtils.RetirerPrefixeLangue(new Uri(NavigationManager.Uri).AbsolutePath).TrimEnd('/');
             if (!cheminActuel.Equals(cheminCanonique, StringComparison.OrdinalIgnoreCase))
             {
                 string destination = !string.IsNullOrWhiteSpace(NiveauPreselectionne)
                     ? $"{cheminCanonique}?niveau={Uri.EscapeDataString(NiveauPreselectionne)}"
                     : cheminCanonique;
-                NavigationManager.NavigateTo(destination, replace: true);
+                NavigationManager.NavigateTo(SeoUtils.LocaliserChemin(destination, Texte.CodeLangue), replace: true);
                 return;
             }
 
@@ -180,7 +180,7 @@ namespace MyDemonList.Web.Components.Pages
                 _currentNiveauInput = _niveauSelectionne?.Nom ?? string.Empty;
 
                 if (_niveauSelectionne is null)
-                    NavigationManager.NavigateTo(ObtenirCheminCanonique(), replace: true);
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin(ObtenirCheminCanonique(), Texte.CodeLangue), replace: true);
             }
 
             _bgA = RandomBg();
@@ -745,7 +745,7 @@ namespace MyDemonList.Web.Components.Pages
                 ? ObtenirCheminCanonique()
                 : $"{ObtenirCheminCanonique()}?niveau={Uri.EscapeDataString(_niveauSelectionne.IdDuNiveauDansLeJeu)}";
 
-            NavigationManager.NavigateTo(chemin, replace: true);
+            NavigationManager.NavigateTo(SeoUtils.LocaliserChemin(chemin, Texte.CodeLangue), replace: true);
         }
 
         private void OnFocusUtilisateur(FocusEventArgs e)

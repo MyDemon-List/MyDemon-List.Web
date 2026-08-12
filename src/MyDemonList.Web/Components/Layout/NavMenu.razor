@@ -179,10 +179,10 @@
                                 </div>
                             </div>
 
-                            <a class="item" href="/profil" role="menuitem">@Texte["ModifierProfil", "Modifier le profil"]</a>
+                            <a class="item" href="@SeoUtils.LocaliserChemin("/profil", Texte.CodeLangue)" role="menuitem">@Texte["ModifierProfil", "Modifier le profil"]</a>
                             @if (_peutAccederAdmin)
                             {
-                                <a class="item" href="/admin" role="menuitem">@Texte["Administration", "Administration"]</a>
+                                <a class="item" href="@SeoUtils.LocaliserChemin("/admin", Texte.CodeLangue)" role="menuitem">@Texte["Administration", "Administration"]</a>
                             }
                             <a class="item item--danger" href="/logout" role="menuitem">@Texte["Deconnexion", "Déconnexion"]</a>
                         </div>

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
+using MyDemonList.Web.Utils;
 
 namespace MyDemonList.Web.Components.Pages
 {
@@ -114,7 +115,7 @@ namespace MyDemonList.Web.Components.Pages
         private void PrevisualiserListe(ListeRef liste)
         {
             ListeSession.SetListe(liste.Id, liste.Nom, liste.DiscordServerUrl);
-            NavigationManager.NavigateTo("/liste");
+            NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/liste", Texte.CodeLangue));
         }
     }
 }

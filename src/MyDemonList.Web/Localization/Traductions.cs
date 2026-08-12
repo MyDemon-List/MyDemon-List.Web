@@ -1,10 +1,19 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Components;
+using MyDemonList.Web.Utils;
 
 namespace MyDemonList.Web.Localization;
 
 public sealed class Traductions
 {
     public static readonly string[] LanguesSupportees = ["fr", "en", "es"];
+
+    private readonly NavigationManager _navigationManager;
+
+    public Traductions(NavigationManager navigationManager)
+    {
+        _navigationManager = navigationManager;
+    }
 
     private static readonly IReadOnlyDictionary<string, string> Anglais = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -470,12 +479,28 @@ public sealed class Traductions
         ["AucuneNotificationAideCourte"] = "La nueva información aparecerá aquí."
     };
 
-    public string CodeLangue => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant() switch
+    public string CodeLangue
     {
-        "fr" => "fr",
-        "es" => "es",
-        _ => "en"
-    };
+        get
+        {
+            string? langueUrl = SeoUtils.ObtenirLangueDuChemin(new Uri(_navigationManager.Uri).AbsolutePath);
+            if (langueUrl is not null) return langueUrl;
+
+            return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant() switch
+            {
+                "fr" => "fr",
+                "es" => "es",
+                _ => "en"
+            };
+        }
+    }
+
+    public CultureInfo Culture => CultureInfo.GetCultureInfo(CodeLangue switch
+    {
+        "fr" => "fr-FR",
+        "es" => "es-ES",
+        _ => "en-US"
+    });
 
     public string this[string cle, string francais]
     {
@@ -495,5 +520,5 @@ public sealed class Traductions
     }
 
     public string Formater(string cle, string francais, params object?[] valeurs) =>
-        string.Format(CultureInfo.CurrentUICulture, this[cle, francais], valeurs);
+        string.Format(Culture, this[cle, francais], valeurs);
 }
