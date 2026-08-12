@@ -1,0 +1,861 @@
+@page "/liste/gerer"
+@page "/liste/{ListeId:int}/{Slug}/gerer"
+@using Microsoft.AspNetCore.Components.Forms
+@using MyDemonList.Web.Utils
+@using System.IO
+
+<SeoHead Titre="@ObtenirTitrePage()"
+         Description="Gérez les niveaux, soumissions, membres et paramètres de cette demon list."
+         CheminCanonique="@ObtenirCheminCanonique()"
+         NePasIndexer="true" />
+
+@if (_isLoading)
+{
+    <p class="chargement">Chargement...</p>
+}
+else if (!_estAutorise)
+{
+    <p class="chargement">Accès refusé.</p>
+}
+else
+{
+    <div class="gestion-page">
+      <div class="gestion-page-contenu">
+        <header class="gestion-entete">
+            <div>
+                <h1>@_listeNom</h1>
+                <p>Gestion de la liste</p>
+            </div>
+            @if (PeutVoirOngletNiveaux)
+            {
+                <span class="gestion-compteur">@_niveaux.Count @(_niveaux.Count > 1 ? "niveaux" : "niveau")</span>
+            }
+        </header>
+
+        <nav class="onglets" aria-label="Navigation de gestion de la liste">
+            @if (PeutVoirOngletNiveaux)
+            {
+                <button type="button" class="onglet @(_ongletActuel == Onglet.Niveaux ? "active" : "")"
+                        aria-pressed="@(_ongletActuel == Onglet.Niveaux)" @onclick="() => _ongletActuel = Onglet.Niveaux">
+                    <span>Niveaux</span>
+                </button>
+                <button type="button" class="onglet @(_ongletActuel == Onglet.Formulaire ? "active" : "")"
+                        aria-pressed="@(_ongletActuel == Onglet.Formulaire)" @onclick="OuvrirCreation">
+                    <span>Ajouter un niveau</span>
+                </button>
+            }
+            <button type="button" class="onglet @(_ongletActuel == Onglet.Soumissions ? "active" : "")"
+                    aria-pressed="@(_ongletActuel == Onglet.Soumissions)" @onclick="() => _ongletActuel = Onglet.Soumissions">
+                <span>Soumissions</span>
+                @if (_soumissions.Count > 0)
+                {
+                    <span class="onglet-compteur">@_soumissions.Count</span>
+                }
+            </button>
+            @if (PeutVoirOngletModeration)
+            {
+                <button type="button" class="onglet @(_ongletActuel == Onglet.Moderation ? "active" : "")"
+                        aria-pressed="@(_ongletActuel == Onglet.Moderation)" @onclick="() => _ongletActuel = Onglet.Moderation">
+                    <span>Modération</span>
+                </button>
+            }
+            @if (PeutVoirOngletParametres)
+            {
+                <button type="button" class="onglet @(_ongletActuel == Onglet.Parametres ? "active" : "")"
+                        aria-pressed="@(_ongletActuel == Onglet.Parametres)" @onclick="() => _ongletActuel = Onglet.Parametres">
+                    <span>Paramètres</span>
+                </button>
+            }
+        </nav>
+
+        @if (_ongletActuel == Onglet.Niveaux && PeutVoirOngletNiveaux)
+        {
+            <div class="outils-niveaux">
+                <div class="recherche-niveau">
+                    <input type="search"
+                           class="input recherche-niveau-input"
+                           aria-label="Rechercher un niveau par son nom"
+                           placeholder="Rechercher un niveau..."
+                           autocomplete="off"
+                           spellcheck="false"
+                           @bind="_rechercheNiveau"
+                           @bind:event="oninput" />
+                    @if (!string.IsNullOrWhiteSpace(_rechercheNiveau))
+                    {
+                        <button type="button"
+                                class="recherche-effacer"
+                                aria-label="Effacer la recherche"
+                                title="Effacer la recherche"
+                                @onclick="() => _rechercheNiveau = string.Empty">×</button>
+                    }
+                </div>
+            </div>
+
+            <div class="table-niveaux">
+                @{
+                    List<LigneNiveau> toutesLignes = ObtenirLignes();
+                    List<LigneNiveau> lignes = FiltrerLignesParNom(toutesLignes);
+                }
+                @if (lignes.Count == 0)
+                {
+                    <p class="aucun-niveau">
+                        @(toutesLignes.Count == 0
+                            ? "Aucun niveau dans cette liste pour l'instant."
+                            : "Aucun niveau ne correspond à cette recherche.")
+                    </p>
+                }
+                else
+                {
+                    @foreach (LigneNiveau ligne in lignes)
+                    {
+                        <div @key="ligne.Classement.Id"
+                             class="@ObtenirClasseLigneNiveau(ligne.Classement.Id)"
+                             style="@ObtenirStyleLigneNiveau(ligne.Classement.Id)">
+                            <span class="ligne-niveau-bg" style=@($"background-image:url('/MiniaturesNiveaux/{ligne.Niveau.Id}.png')")></span>
+                            <span class="ligne-niveau-shade"></span>
+
+                            <span class="position">#@ligne.Classement.ClassementPosition</span>
+
+                            <div class="position-edit">
+                                <input type="number" min="1" max="@toutesLignes.Count" class="input input-position"
+                                       title="Nouvelle position"
+                                       value="@ObtenirPositionSaisie(ligne)"
+                                       disabled="@_deplacementEnCours"
+                                       @oninput="e => OnPositionInput(ligne.Classement.Id, e)"
+                                       @onkeydown="e => OnPositionKeyDown(e, ligne.Classement.Id)" />
+                                <button type="button" title="Déplacer à cette position" disabled="@_deplacementEnCours" @onclick="() => ValiderPosition(ligne.Classement.Id)">✓</button>
+                            </div>
+
+                            <div class="infos">
+                                <span class="nom">@ligne.Niveau.Nom</span>
+                                <div class="details">
+                                    <span class="chip">@ligne.Classement.Points pts</span>
+                                    <span class="chip">@ligne.Niveau.Rating?.Nom</span>
+                                    <span class="chip">Publisher : @ligne.Niveau.Publisher?.Nom</span>
+                                    <span class="chip">Vérifieur : @ligne.Niveau.Verifieur?.Nom</span>
+                                    @if (ligne.NomsCreateurs.Count > 0)
+                                    {
+                                        <span class="chip">Créateurs : @string.Join(", ", ligne.NomsCreateurs)</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="actions">
+                                <button type="button" title="Monter" disabled="@_deplacementEnCours" @onclick="() => MonterNiveau(ligne.Classement.Id)">▲</button>
+                                <button type="button" title="Descendre" disabled="@_deplacementEnCours" @onclick="() => DescendreNiveau(ligne.Classement.Id)">▼</button>
+                                <button type="button" disabled="@_deplacementEnCours" @onclick="async () => await OuvrirEdition(ligne)">Modifier</button>
+                                @if (PeutSupprimerNiveaux)
+                                {
+                                    <button type="button" class="btn-danger" disabled="@_deplacementEnCours" @onclick="() => DemanderSuppression(ligne.Niveau.Id)">Supprimer</button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            @if (_afficherConfirmationSuppression)
+            {
+                <div class="modal-backdrop" @onclick="AnnulerSuppression"></div>
+                <div class="modal-confirm">
+                    <p>Supprimer ce niveau ainsi que son classement, ses réussites et ses soumissions associées ?</p>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-danger" @onclick="ConfirmerSuppression">Confirmer</button>
+                        <button type="button" @onclick="AnnulerSuppression">Annuler</button>
+                    </div>
+                </div>
+            }
+        }
+        else if (_ongletActuel == Onglet.Formulaire && PeutModifierNiveaux)
+        {
+            @if (_niveauEnEditionId is null && !PeutAjouterNiveauSansDemande)
+            {
+                <div class="formulaire-niveau">
+                    <h2>Limite de niveaux atteinte</h2>
+
+                    @if (_demandeNiveauxEnCours)
+                    {
+                        <div class="alert alert-info">
+                            Demande en cours de traitement (passage de @LimiteNiveauxActuelle à @ProchaineLimiteNiveaux niveaux).
+                        </div>
+                    }
+                    else if (CooldownRestantNiveaux is TimeSpan restant)
+                    {
+                        <div class="alert alert-info">
+                            Demande refusée. Vous pourrez redemander dans @FormaterDuree(restant).
+                        </div>
+                    }
+                    else
+                    {
+                        <p>Cette liste a atteint la limite de @LimiteNiveauxActuelle niveaux.</p>
+                        <button type="button" class="btn" @onclick="DemanderAugmentationNiveaux">Demander le passage à @ProchaineLimiteNiveaux niveaux</button>
+                    }
+
+                    <div class="actions-formulaire">
+                        <button type="button" @onclick="() => _ongletActuel = Onglet.Niveaux">Retour</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+            <div class="formulaire-niveau formulaire-niveau-editor">
+                <div class="formulaire-entete">
+                    <h2>@(_niveauEnEditionId is null ? "Ajouter un niveau" : "Modifier le niveau")</h2>
+                    <p>@(_niveauEnEditionId is null
+                        ? "Renseignez l'ID du niveau puis vérifiez les informations récupérées."
+                        : "Mettez à jour les informations du niveau sélectionné.")</p>
+                </div>
+
+                <div class="champ champ-id-jeu @(EstPremierNiveau ? "champ-id-jeu-premier" : "")">
+                    <label for="niveau-id-jeu">ID du niveau dans le jeu</label>
+                    <input id="niveau-id-jeu" class="input @(_formIdDuNiveauErreur is not null ? "input-erreur" : null)"
+                           value="@_formIdDuNiveauDansLeJeu" @oninput="OnIdDuNiveauInput"
+                           inputmode="numeric" autocomplete="off" placeholder="Ex : 12345678" />
+                    @if (_formIdDuNiveauErreur is not null)
+                    {
+                        <small class="erreur-champ">@_formIdDuNiveauErreur</small>
+                    }
+                    else if (EstPremierNiveau)
+                    {
+                        <small>Le nom, le publieur, la difficulté et la miniature sont récupérés automatiquement lorsqu'ils sont disponibles.</small>
+                    }
+                </div>
+
+                @if (AfficheChampsDesactive)
+                {
+                    <div class="champ champ-nom">
+                        <label for="niveau-nom">Nom</label>
+                        <input id="niveau-nom" class="input" @bind="_formNom" @bind:event="oninput" maxlength="128" />
+                    </div>
+
+                    <div class="champ champ-url">
+                        <label for="niveau-url-verif">URL de vérification</label>
+                        <input id="niveau-url-verif" class="input" @bind="_formUrlVerification" @bind:event="oninput" placeholder="https://..." />
+                    </div>
+
+                    <div class="champ-ligne champ-duree">
+                        <div class="champ">
+                            <label for="niveau-duree-min">Durée (minutes)</label>
+                            <input id="niveau-duree-min" type="number" min="0" class="input" @bind="_formDureeMinutes" />
+                        </div>
+                        <div class="champ">
+                            <label for="niveau-duree-sec">Durée (secondes)</label>
+                            <input id="niveau-duree-sec" type="number" min="0" max="59" class="input" @bind="_formDureeSecondes" />
+                        </div>
+                    </div>
+
+                    <div class="champ champ-difficulte">
+                        <div class="difficulte-entete">
+                            <label id="niveau-rating-label">Difficulté</label>
+                            @if (DifficulteSelectionnee is Difficulte difficulteSelectionnee)
+                            {
+                                <span class="difficulte-selection-actuelle">@difficulteSelectionnee.Nom</span>
+                            }
+                        </div>
+
+                        <div class="difficulte-selecteur" role="group" aria-labelledby="niveau-rating-label">
+                            <div class="difficulte-groupe">
+                                <span class="difficulte-groupe-titre">Classiques</span>
+                                <div class="difficulte-options difficulte-options-principales">
+                                    @foreach (Difficulte difficulte in ObtenirDifficultesPrincipales(false))
+                                    {
+                                        bool estSelectionnee = EstDifficultePrincipaleSelectionnee(difficulte);
+                                        <button type="button"
+                                                class="difficulte-option @(estSelectionnee ? "selectionnee" : null)"
+                                                aria-pressed="@estSelectionnee"
+                                                title="@difficulte.Nom"
+                                                @onclick="() => SelectionnerDifficultePrincipale(difficulte)">
+                                            <img src="@difficulte.ImageUrl" alt="" />
+                                            <span>@difficulte.Nom</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="difficulte-groupe">
+                                <span class="difficulte-groupe-titre">Demons</span>
+                                <div class="difficulte-options difficulte-options-principales">
+                                    @foreach (Difficulte difficulte in ObtenirDifficultesPrincipales(true))
+                                    {
+                                        bool estSelectionnee = EstDifficultePrincipaleSelectionnee(difficulte);
+                                        <button type="button"
+                                                class="difficulte-option @(estSelectionnee ? "selectionnee" : null)"
+                                                aria-pressed="@estSelectionnee"
+                                                title="@difficulte.Nom"
+                                                @onclick="() => SelectionnerDifficultePrincipale(difficulte)">
+                                            <img src="@difficulte.ImageUrl" alt="" />
+                                            <span>@difficulte.Nom</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (ObtenirVariantesDifficulteSelectionnee() is { Count: > 1 } variantes)
+                            {
+                                <div class="difficulte-groupe difficulte-groupe-variantes">
+                                    <span class="difficulte-groupe-titre">Rating</span>
+                                    <div class="difficulte-options difficulte-options-variantes">
+                                        @foreach (Difficulte variante in variantes)
+                                        {
+                                            bool estSelectionnee = _formRatingId == variante.Id;
+                                            <button type="button"
+                                                    class="difficulte-option difficulte-variante @(estSelectionnee ? "selectionnee" : null)"
+                                                    aria-pressed="@estSelectionnee"
+                                                    title="@variante.Nom"
+                                                    @onclick="() => SelectionnerVarianteDifficulte(variante)">
+                                                <img src="@variante.ImageUrl" alt="" />
+                                                <span>@ObtenirNomVarianteDifficulte(variante)</span>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="champ champ-autocomplete champ-publisher">
+                        <label for="niveau-publisher">Publieur</label>
+                        <input id="niveau-publisher" class="input" value="@_formPublisherInput" @oninput="OnPublisherInput" autocomplete="off" placeholder="Nom du publieur" />
+                        @if (_formPublisherSuggestions.Count > 0)
+                        {
+                            <div class="suggestions">
+                                @foreach (UtilisateurSuggestion suggestion in _formPublisherSuggestions)
+                                {
+                                    <div class="suggestion suggestion-discord" @onclick="() => SelectPublisher(suggestion)">
+                                        <span class="suggestion-nom">@suggestion.Nom</span>
+                                        @if (suggestion.DiscordUsername is not null || suggestion.DiscordDisplayName is not null)
+                                        {
+                                            <span class="suggestion-discord-info">Discord : @(suggestion.DiscordDisplayName ?? "?") (@(suggestion.DiscordUsername ?? "?"))</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="champ champ-autocomplete champ-verifieur">
+                        <div class="champ-entete-actions">
+                            <label for="niveau-verifieur">Vérifieur</label>
+                            @if (_niveauEnEditionId is null && !string.IsNullOrWhiteSpace(_formPublisherInput))
+                            {
+                                <button type="button" class="btn-reprendre-publieur" @onclick="UtiliserPublieurCommeVerifieur">Utiliser le publieur</button>
+                            }
+                        </div>
+                        <input id="niveau-verifieur" class="input" value="@_formVerifieurInput" @oninput="OnVerifieurInput" autocomplete="off" placeholder="Nom du vérifieur" />
+                        @if (_formVerifieurSuggestions.Count > 0)
+                        {
+                            <div class="suggestions">
+                                @foreach (UtilisateurSuggestion suggestion in _formVerifieurSuggestions)
+                                {
+                                    <div class="suggestion suggestion-discord" @onclick="() => SelectVerifieur(suggestion)">
+                                        <span class="suggestion-nom">@suggestion.Nom</span>
+                                        @if (suggestion.DiscordUsername is not null || suggestion.DiscordDisplayName is not null)
+                                        {
+                                            <span class="suggestion-discord-info">Discord : @(suggestion.DiscordDisplayName ?? "?") (@(suggestion.DiscordUsername ?? "?"))</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="champ champ-autocomplete champ-createurs">
+                        <div class="champ-entete-actions">
+                            <label for="niveau-createurs">Créateurs *</label>
+                            @if (_niveauEnEditionId is null && !string.IsNullOrWhiteSpace(_formPublisherInput))
+                            {
+                                <button type="button" class="btn-reprendre-publieur" @onclick="AjouterPublieurCommeCreateur">Ajouter le publieur</button>
+                            }
+                        </div>
+                        <div class="ligne-ajout">
+                            <input id="niveau-createurs" class="input" value="@_formCreateurInput" @oninput="OnCreateurInput" autocomplete="off" placeholder="Nom d'un créateur" />
+                            <button type="button" class="btn" @onclick="() => AjouterCreateur(null)">Ajouter</button>
+                        </div>
+                        @if (_formCreateurSuggestions.Count > 0)
+                        {
+                            <div class="suggestions">
+                                @foreach (UtilisateurSuggestion suggestion in _formCreateurSuggestions)
+                                {
+                                    <div class="suggestion suggestion-discord" @onclick="() => AjouterCreateur(suggestion)">
+                                        <span class="suggestion-nom">@suggestion.Nom</span>
+                                        @if (suggestion.DiscordUsername is not null || suggestion.DiscordDisplayName is not null)
+                                        {
+                                            <span class="suggestion-discord-info">Discord : @(suggestion.DiscordDisplayName ?? "?") (@(suggestion.DiscordUsername ?? "?"))</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        @if (_formCreateurs.Count > 0)
+                        {
+                            <div class="chips-createurs">
+                                @foreach (string nom in _formCreateurs)
+                                {
+                                    <span class="chip-createur">
+                                        @nom
+                                        <button type="button" title="Retirer" @onclick="() => RetirerCreateur(nom)">×</button>
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @if (_niveauEnEditionId is null)
+                    {
+                        <div class="champ champ-position">
+                            <label for="niveau-position">Position dans la liste</label>
+                            <input id="niveau-position" type="number" min="1" max="@(_classements.Count + 1)" class="input" @bind="_formPosition" @bind:event="oninput" />
+                            @{
+                                (string? nomAuDessus, string? nomEnDessous) = ObtenirVoisinsPosition();
+                            }
+                            <div class="details">
+                                <span class="chip">En dessous de : @(nomAuDessus ?? "— (tête de liste)")</span>
+                                <span class="chip">Au-dessus de : @(nomEnDessous ?? "— (fin de liste)")</span>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="champ champ-miniature">
+                        <label>Miniature du niveau *</label>
+                        <InputFile id="niveau-miniature-input" class="input-fichier-cache" hidden OnChange="OnMiniatureNiveauSelected" accept="image/*" />
+                        <div class="miniature-zone @(!string.IsNullOrWhiteSpace(_formMiniatureNiveauBase64) ? "avec-apercu" : "sans-apercu")">
+                            @if (!string.IsNullOrWhiteSpace(_formMiniatureNiveauBase64))
+                            {
+                                <img class="apercu-miniature" src="data:@(_formMiniatureNiveauContentType ?? "image/png");base64,@_formMiniatureNiveauBase64" alt="Aperçu de la miniature" />
+                                <div class="miniature-actions">
+                                    <span>Aperçu utilisé dans la liste</span>
+                                    <label for="niveau-miniature-input" class="btn-fichier">Changer la miniature</label>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="miniature-vide">Aucune miniature sélectionnée</span>
+                                <label for="niveau-miniature-input" class="btn-fichier">Choisir un fichier</label>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_formErreur))
+                {
+                    <div class="alert alert-error">@_formErreur</div>
+                }
+
+                <div class="actions-formulaire">
+                    <button type="button" class="btn" @onclick="EnregistrerNiveau"
+                            disabled="@(_formEnCours || _formIdDuNiveauErreur is not null)">
+                        @(_formEnCours ? "Enregistrement..." : (_niveauEnEditionId is null ? "Créer le niveau" : "Enregistrer les modifications"))
+                    </button>
+                    <button type="button" class="btn-secondaire" @onclick="() => _ongletActuel = Onglet.Niveaux">Annuler</button>
+                </div>
+            </div>
+            }
+        }
+        else if (_ongletActuel == Onglet.Soumissions)
+        {
+            <div class="table-niveaux">
+                @if (!string.IsNullOrWhiteSpace(_soumissionErreur))
+                {
+                    <div class="alert alert-error">@_soumissionErreur</div>
+                }
+
+                @if (_soumissions.Count == 0)
+                {
+                    <p class="aucun-niveau">Aucune soumission en attente.</p>
+                }
+                else
+                {
+                    @foreach (SoumissionNiveau soumission in _soumissions)
+                    {
+                        string? urlIframe = VideoUtils.ObtenirUrlIframe(soumission.UrlVideo);
+                        bool estOuverte = _soumissionOuverteId == soumission.IdSoumission;
+                        bool enFermeture = _soumissionEnFermetureId == soumission.IdSoumission;
+
+                        <div class="carte-soumission @(enFermeture ? "fermeture" : "")" @key="soumission.IdSoumission">
+                            <div class="ligne-header" @onclick="() => ToggleSoumission(soumission.IdSoumission)">
+                                <div class="infos">
+                                    <span class="nom">@soumission.Niveau?.Nom</span>
+                                    <div class="details">
+                                        <span class="chip">Par @soumission.NomUtilisateur</span>
+                                        <span class="chip">@soumission.DateSoumission.ToString("dd/MM/yyyy HH:mm")</span>
+                                    </div>
+                                </div>
+
+                                <div class="actions" @onclick:stopPropagation="true">
+                                    <button type="button" disabled="@(_soumissionEnCoursId == soumission.IdSoumission)" @onclick="() => AccepterSoumission(soumission.IdSoumission)">Accepter</button>
+                                    <button type="button" class="btn-danger" disabled="@(_soumissionEnCoursId == soumission.IdSoumission)" @onclick="() => RefuserSoumission(soumission.IdSoumission)">Refuser</button>
+                                </div>
+
+                                <span class="chevron-soumission @(estOuverte ? "ouvert" : "")" aria-hidden="true"></span>
+                            </div>
+
+                            <div class="corps-soumission @(estOuverte ? "ouvert" : "")">
+                                @if (urlIframe is not null)
+                                {
+                                    <div class="video-16x9">
+                                        <iframe src="@urlIframe" title="Vidéo de la soumission" frameborder="0" allowfullscreen></iframe>
+                                    </div>
+                                }
+
+                                <div class="liens-soumission">
+                                    @if (urlIframe is null)
+                                    {
+                                        <a class="chip" href="@soumission.UrlVideo" target="_blank" rel="noopener noreferrer">Voir la vidéo</a>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(soumission.RawFootageUrl))
+                                    {
+                                        <a class="chip" href="@soumission.RawFootageUrl" target="_blank" rel="noopener noreferrer">Voir le Raw Footage</a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else if (_ongletActuel == Onglet.Parametres && PeutVoirOngletParametres)
+        {
+            <EditForm Model="@this">
+                <div id="parametres-haut" class="formulaire-parametres">
+                    <header class="parametres-entete">
+                        <h2>Paramètres de la liste</h2>
+                        <p>Personnalisez les informations publiques et les règles de votre liste.</p>
+                    </header>
+
+                    @if (_parametresSauvegardes)
+                    {
+                        <div class="alert alert-success">Modifications sauvegardées.</div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_parametresErreur))
+                    {
+                        <div class="alert alert-error">@_parametresErreur</div>
+                    }
+
+                    <section class="parametres-section">
+                        <div class="parametres-section-entete">
+                            <h3>Informations générales</h3>
+                            <p>Ces informations sont visibles sur les pages publiques de la liste.</p>
+                        </div>
+
+                        <div class="parametres-grille">
+                            <div class="champ parametre-nom">
+                                <label for="liste-nom">Nom de la liste *</label>
+                                <input id="liste-nom" class="input" @bind="_listeNom" @bind:event="oninput" maxlength="128" />
+                            </div>
+
+                            <div class="champ parametre-discord">
+                                <label for="liste-discord">Lien du serveur Discord</label>
+                                <input id="liste-discord" class="input" @bind="_listeDiscordServerUrl" @bind:event="oninput" placeholder="https://discord.gg/..." />
+                            </div>
+
+                            <div class="champ parametre-description">
+                                <label for="liste-description">Description</label>
+                                <textarea id="liste-description" class="input input-textarea" @bind="_listeDescription" rows="4" placeholder="Description de votre liste..."></textarea>
+                            </div>
+
+                            <label class="parametre-switch" for="liste-publique">
+                                <input id="liste-publique" type="checkbox" @bind="_listeEstPublique" />
+                                <span class="parametre-switch-piste" aria-hidden="true"></span>
+                                <span class="parametre-switch-texte">
+                                    <strong>Liste publique</strong>
+                                    <small>La liste est visible par tous les utilisateurs.</small>
+                                </span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="parametres-section">
+                        <div class="parametres-section-entete">
+                            <h3>Apparence</h3>
+                            <p>Choisissez l'image affichée derrière les pages de votre liste.</p>
+                        </div>
+
+                        <div class="champ parametre-background">
+                            <label for="liste-background">Image de fond</label>
+                            <InputFile id="liste-background" class="input-fichier-cache" hidden OnChange="OnBackgroundImageSelected" accept="image/*" />
+                            <div class="background-zone @(_listeAUneImageDeFond || _backgroundImageBytes != null ? "avec-apercu" : "sans-apercu")">
+                                @if (_backgroundImageBytes != null)
+                                {
+                                    <img class="apercu-background" src="@($"data:{_backgroundImageContentType};base64,{Convert.ToBase64String(_backgroundImageBytes)}")" alt="Aperçu de l'image de fond" />
+                                }
+                                else if (_listeAUneImageDeFond)
+                                {
+                                    <img class="apercu-background" src="@($"/BackgroundsListes/{_listeId}.png?v={_imageDeFondVersion}")" alt="Image de fond actuelle" />
+                                }
+                                else
+                                {
+                                    <span class="background-vide">Aucune image de fond sélectionnée</span>
+                                }
+
+                                <div class="background-actions">
+                                    @if (_listeAUneImageDeFond || _backgroundImageBytes != null)
+                                    {
+                                        <span>@(_backgroundImageBytes != null ? "Nouvel aperçu" : "Image actuelle")</span>
+                                    }
+                                    <label for="liste-background" class="btn-fichier">@(_listeAUneImageDeFond || _backgroundImageBytes != null ? "Changer l'image" : "Choisir un fichier")</label>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="parametres-section">
+                        <div class="parametres-section-entete">
+                            <h3>Preuves vidéo</h3>
+                            <p>Définissez quand une vidéo brute doit accompagner une soumission.</p>
+                        </div>
+
+                        <div class="parametres-raw-footage">
+                            <div class="champ">
+                                <label for="raw-footage-mode">Raw Footage requis</label>
+                                <div class="parametre-combobox @(_menuRawFootageOuvert ? "ouvert" : "")">
+                                    <button id="raw-footage-mode"
+                                            type="button"
+                                            class="parametre-combobox-trigger"
+                                            aria-haspopup="listbox"
+                                            aria-expanded="@_menuRawFootageOuvert"
+                                            @onclick="BasculerMenuRawFootage">
+                                        <span>@NomModeRawFootage(_rawFootageMode)</span>
+                                        <span class="parametre-combobox-chevron" aria-hidden="true"></span>
+                                    </button>
+
+                                    @if (_menuRawFootageOuvert)
+                                    {
+                                        <div class="parametre-combobox-options" role="listbox" aria-label="Raw Footage requis">
+                                            @foreach (RawFootageMode mode in Enum.GetValues<RawFootageMode>())
+                                            {
+                                                <button type="button"
+                                                        role="option"
+                                                        aria-selected="@(mode == _rawFootageMode)"
+                                                        class="parametre-combobox-option @(mode == _rawFootageMode ? "active" : "")"
+                                                        @onclick="() => ChoisirModeRawFootage(mode)">
+                                                    <span>@NomModeRawFootage(mode)</span>
+                                                    <small>@DescriptionModeRawFootage(mode)</small>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <small>@DescriptionModeRawFootage(_rawFootageMode)</small>
+                            </div>
+
+                            @if (_rawFootageMode == RawFootageMode.FromTop)
+                            {
+                                <div class="champ parametre-top-depart">
+                                    <label for="raw-footage-top">Top de départ</label>
+                                    <input id="raw-footage-top" type="number" min="1" class="input" @bind="_rawFootageTopStart" />
+                                    <small>Exemple : 12 demande une vidéo brute pour les niveaux classés de 12 à 1.</small>
+                                </div>
+                            }
+                        </div>
+                    </section>
+
+                    <div class="actions-formulaire">
+                        <button type="button" class="btn" @onclick="SauvegarderParametres" disabled="@_parametresEnCours">
+                            @(_parametresEnCours ? "Sauvegarde..." : "Sauvegarder")
+                        </button>
+                        <button type="button" class="btn-secondaire" @onclick="() => _ongletActuel = Onglet.Niveaux">Annuler</button>
+                    </div>
+                </div>
+            </EditForm>
+        }
+        else if (_ongletActuel == Onglet.Moderation && PeutVoirOngletModeration)
+        {
+            <div class="formulaire-moderation">
+                <header class="moderation-entete">
+                    <div>
+                        <h2>Modération</h2>
+                        <p>Gérez les membres autorisés à intervenir sur cette liste.</p>
+                    </div>
+                    <span class="moderation-compteur">@(_membres.Count + 1) @(_membres.Count == 0 ? "membre" : "membres")</span>
+                </header>
+
+                @if (!string.IsNullOrEmpty(_moderationErreur))
+                {
+                    <div class="alert alert-error">@_moderationErreur</div>
+                }
+
+                <section class="moderation-section moderation-membres">
+                    <div class="moderation-section-entete">
+                        <h3>Membres et rôles</h3>
+                        <p>Le propriétaire possède toujours tous les droits sur la liste.</p>
+                    </div>
+
+                    <div class="moderation-liste">
+                        <div class="membre-ligne membre-proprietaire">
+                            <div class="membre-infos">
+                                <span class="membre-nom">@_proprietaireNomSite</span>
+                                <span class="membre-discord">Discord : @(_proprietaireDiscordDisplayName ?? "?") (@(_proprietaireDiscordUsername ?? "?"))</span>
+                            </div>
+                            <div class="membre-actions">
+                                <span class="membre-role-badge role-proprietaire">Propriétaire</span>
+                            </div>
+                        </div>
+
+                        @if (_membres.Count == 0)
+                        {
+                            <p class="moderation-vide">Aucun autre membre n'a de rôle sur cette liste.</p>
+                        }
+                        else
+                        {
+                            @foreach (MembreLigne membre in _membres)
+                            {
+                                RoleListe roleSelectionne = ObtenirRoleMembreSelectionne(membre);
+                                bool roleModifie = roleSelectionne != membre.Role;
+
+                                <div class="membre-ligne">
+                                    <div class="membre-infos">
+                                        <span class="membre-nom">@membre.NomSite</span>
+                                        <span class="membre-discord">Discord : @(membre.DiscordDisplayName ?? "?") (@(membre.DiscordUsername ?? "?"))</span>
+                                    </div>
+                                    <div class="membre-actions">
+                                        @if (PeutRevoquerRole(membre.Role))
+                                        {
+                                            <div class="role-combobox @(roleModifie ? "modifie" : "") @(_menuRoleMembreOuvertId == membre.UtilisateurId ? "ouvert" : "")">
+                                                <button type="button"
+                                                        class="role-combobox-trigger"
+                                                        aria-label="Rôle de @membre.NomSite"
+                                                        aria-haspopup="listbox"
+                                                        aria-expanded="@(_menuRoleMembreOuvertId == membre.UtilisateurId)"
+                                                        title="@DescriptionRole(roleSelectionne)"
+                                                        @onclick="() => BasculerMenuRoleMembre(membre.UtilisateurId)">
+                                                    <span>@NomRole(roleSelectionne)</span>
+                                                    <span class="role-combobox-chevron" aria-hidden="true"></span>
+                                                </button>
+
+                                                @if (_menuRoleMembreOuvertId == membre.UtilisateurId)
+                                                {
+                                                    <div class="role-combobox-options" role="listbox" aria-label="Choisir un rôle">
+                                                        @foreach (RoleListe role in RolesAssignables)
+                                                        {
+                                                            <button type="button"
+                                                                    role="option"
+                                                                    aria-selected="@(role == roleSelectionne)"
+                                                                    class="role-combobox-option @(role == roleSelectionne ? "active" : "")"
+                                                                    title="@DescriptionRole(role)"
+                                                                    @onclick="() => ChoisirRoleMembre(membre, role)">
+                                                                @NomRole(role)
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="membre-role-badge">@NomRole(membre.Role)</span>
+                                        }
+
+                                        @if (roleModifie)
+                                        {
+                                            <button type="button"
+                                                    class="role-valider"
+                                                    title="Enregistrer le nouveau rôle"
+                                                    @onclick="() => ValiderRoleMembreAsync(membre)">
+                                                Valider
+                                            </button>
+                                        }
+
+                                        @if (PeutRevoquerRole(membre.Role))
+                                        {
+                                            <button type="button" class="membre-retirer" @onclick="() => DemanderRevocation(membre)">Retirer</button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </section>
+
+                @if (_afficherConfirmationRevocation && _membreARevoquer is not null)
+                {
+                    <div class="modal-backdrop" @onclick="AnnulerRevocation"></div>
+                    <div class="modal-confirm">
+                        <p>Retirer le rôle @NomRole(_membreARevoquer.Role) de @_membreARevoquer.NomSite ?</p>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-danger" @onclick="ConfirmerRevocation">Confirmer</button>
+                            <button type="button" @onclick="AnnulerRevocation">Annuler</button>
+                        </div>
+                    </div>
+                }
+
+                <section class="ajout-membre moderation-section">
+                    <div class="moderation-section-entete">
+                        <h3>Attribuer un rôle</h3>
+                        <p>Recherchez un utilisateur avec son nom du site ou son compte Discord.</p>
+                    </div>
+
+                    <div class="champ champ-autocomplete recherche-membre">
+                        <label for="membre-recherche">Utilisateur</label>
+                        <input id="membre-recherche" class="input" value="@_rechercheMembreInput" @oninput="OnRechercheMembreInput" autocomplete="off" placeholder="Nom dans le site, pseudo ou tag Discord..." />
+                        @if (_rechercheMembreSuggestions.Count > 0)
+                        {
+                            <div class="suggestions">
+                                @foreach (DiscordUtilisateurSuggestion candidat in _rechercheMembreSuggestions)
+                                {
+                                    <div class="suggestion suggestion-discord" @onclick="() => SelectCandidatMembre(candidat)">
+                                        <span class="suggestion-nom">@candidat.NomSite</span>
+                                        <span class="suggestion-discord-info">Discord : @(candidat.DiscordDisplayName ?? "?") (@(candidat.DiscordUsername ?? "?"))</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @if (_candidatSelectionne is not null)
+                    {
+                        <div class="candidat-selectionne">
+                            <div class="membre-infos">
+                                <span class="membre-nom">@_candidatSelectionne.NomSite</span>
+                                <span class="membre-discord">Discord : @(_candidatSelectionne.DiscordDisplayName ?? "?") (@(_candidatSelectionne.DiscordUsername ?? "?"))</span>
+                            </div>
+                            <span class="candidat-badge">Sélectionné</span>
+                        </div>
+
+                        <div class="attribution-role">
+                            <div class="champ">
+                                <label for="membre-role">Rôle</label>
+                                <div class="role-combobox role-combobox-attribution @(_menuRoleAttributionOuvert ? "ouvert" : "")">
+                                    <button id="membre-role"
+                                            type="button"
+                                            class="role-combobox-trigger"
+                                            aria-haspopup="listbox"
+                                            aria-expanded="@_menuRoleAttributionOuvert"
+                                            title="@DescriptionRole(_roleAAssigner)"
+                                            @onclick="BasculerMenuRoleAttribution">
+                                        <span>@NomRole(_roleAAssigner)</span>
+                                        <span class="role-combobox-chevron" aria-hidden="true"></span>
+                                    </button>
+
+                                    @if (_menuRoleAttributionOuvert)
+                                    {
+                                        <div class="role-combobox-options" role="listbox" aria-label="Choisir un rôle">
+                                            @foreach (RoleListe role in RolesAssignables)
+                                            {
+                                                <button type="button"
+                                                        role="option"
+                                                        aria-selected="@(role == _roleAAssigner)"
+                                                        class="role-combobox-option @(role == _roleAAssigner ? "active" : "")"
+                                                        title="@DescriptionRole(role)"
+                                                        @onclick="() => ChoisirRoleAttribution(role)">
+                                                    @NomRole(role)
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <small>@DescriptionRole(_roleAAssigner)</small>
+                            </div>
+
+                            <div class="actions-formulaire actions-attribution">
+                                <button type="button" class="btn" @onclick="AssignerRoleAsync" disabled="@_assignationEnCours">
+                                    @(_assignationEnCours ? "Attribution..." : $"Attribuer à {_candidatSelectionne.NomSite}")
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </section>
+            </div>
+        }
+      </div>
+    </div>
+}

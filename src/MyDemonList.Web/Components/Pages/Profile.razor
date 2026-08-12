@@ -1,0 +1,207 @@
+@page "/profil"
+@page "/profile"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
+@inject Traductions Texte
+
+<SeoHead Titre="@Texte["Profil", "Profil"]"
+         Description="@Texte["SeoProfilDescription", "Gérez votre profil My Demon List et les informations associées à votre compte Discord."]"
+         CheminCanonique="/profil"
+         NePasIndexer="true" />
+
+<AuthorizeView>
+    <Authorized>
+        @if (_isLoading)
+        {
+            <div class="profil-loading">@Texte["Chargement", "Chargement..."]</div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_erreur))
+        {
+            <main class="profil-page">
+                <div class="profil-card">
+                    <div class="alert alert-error">@_erreur</div>
+                </div>
+            </main>
+        }
+        else
+        {
+            <main class="profil-page">
+                <div class="profil-card">
+                    <header class="profil-entete">
+                        <img class="avatar" src="@_avatarUrl" alt="Avatar Discord" />
+                        <div class="profil-identite">
+                            <h1>@_nomActuel</h1>
+                            <div class="discord-infos">
+                                <div class="discord-info">
+                                    <span class="discord-label">@Texte["NomDiscord", "Nom Discord"]</span>
+                                    <span class="discord-value">@_discordDisplayName</span>
+                                </div>
+                                <div class="discord-info">
+                                    <span class="discord-label">@Texte["TagDiscord", "Tag Discord"]</span>
+                                    <span class="discord-value">@_discordUsername</span>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <section class="profil-section">
+                        <div class="section-entete">
+                            <h2>@Texte["NomAffiche", "Nom affiché"]</h2>
+                            <p>@Texte["NomAfficheAide", "Ce nom est utilisé dans les listes et les classements."]</p>
+                        </div>
+
+                        <div class="nom-form">
+                            <input id="nom"
+                                   class="input"
+                                   aria-label="@Texte["NomAffiche", "Nom affiché"]"
+                                   value="@_nom"
+                                   @oninput="(e => _nom = e.Value?.ToString() ?? string.Empty)" />
+                            <button type="button" class="btn" @onclick="EnregistrerNom" disabled="@_saving">
+                                @if (_saving)
+                                {
+                                    <span class="spinner" aria-hidden="true"></span>
+                                    <span>@Texte["Enregistrement", "Enregistrement..."]</span>
+                                }
+                                else
+                                {
+                                    <span>@Texte["Enregistrer", "Enregistrer"]</span>
+                                }
+                            </button>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(_validation))
+                        {
+                            <div class="alert alert-error">@_validation</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_succes))
+                        {
+                            <div class="alert alert-success">@_succes</div>
+                        }
+                    </section>
+
+                    <section class="profil-section">
+                        <div class="section-entete section-entete--action">
+                            <div>
+                                <h2>@Texte["FusionCompte", "Fusion de compte"]</h2>
+                                <p>@Texte["FusionCompteAide", "Pour récupérer l'activité d'un ancien compte."]</p>
+                            </div>
+                            <button type="button" class="btn btn-secondary" @onclick="OuvrirPopupFusion">
+                                @Texte["FusionnerCompte", "Fusionner un compte"]
+                            </button>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(_fusionMessage) && !_popupFusion)
+                        {
+                            <div class="alert">@_fusionMessage</div>
+                        }
+
+                        @if (_popupFusion)
+                        {
+                            <div class="fusion-form">
+                                <h3>@Texte["NouvelleDemande", "Nouvelle demande"]</h3>
+                                <p class="fusion-explication">@Texte["FusionExplication", "Votre compte sera absorbé par le compte choisi. La demande devra ensuite être acceptée."]</p>
+
+                                <div class="champ-autocomplete">
+                                    <label for="fusion-compte">@Texte["CompteFusionner", "Compte à fusionner"]</label>
+                                    <input id="fusion-compte" class="input" value="@_fusionTargetInput" @oninput="OnFusionTargetInput" autocomplete="off" placeholder="@Texte["NomAutreCompte", "Nom de l'autre compte"]" />
+                                    @if (_fusionTargetSuggestions.Count > 0)
+                                    {
+                                        <div class="suggestions">
+                                            @foreach (Utilisateur suggestion in _fusionTargetSuggestions)
+                                            {
+                                                <button type="button" class="suggestion" @onclick="() => SelectFusionTarget(suggestion)">@suggestion.Nom</button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (_fusionTargetSelectionne is not null)
+                                {
+                                    <div class="champ">
+                                        <label for="fusion-nom">@Texte["NomConserver", "Nom à conserver"]</label>
+                                        <select id="fusion-nom" class="input" @bind="_nomFusionFinal">
+                                            <option value="@_nom">@Texte.Formater("GarderMonNom", "Garder mon nom ({0})", _nom)</option>
+                                            <option value="cible">@Texte.Formater("GarderNomCible", "Garder le nom de {0}", _fusionTargetSelectionne.Nom)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="champ">
+                                        <label for="fusion-motif">@Texte["MotifOptionnel", "Motif (optionnel)"]</label>
+                                        <textarea id="fusion-motif" class="input" rows="3" @bind="_fusionMotif" placeholder="@Texte["MotifFusionPlaceholder", "Pourquoi souhaitez-vous fusionner ces comptes ?"]"></textarea>
+                                    </div>
+                                }
+
+                                @if (!string.IsNullOrEmpty(_fusionMessage))
+                                {
+                                    <div class="alert">@_fusionMessage</div>
+                                }
+
+                                <div class="actions">
+                                    <button type="button" class="btn" @onclick="EnvoyerDemandeFusion">@Texte["EnvoyerDemande", "Envoyer la demande"]</button>
+                                    <button type="button" class="btn btn-danger" @onclick="() => _popupFusion = false">@Texte["Annuler", "Annuler"]</button>
+                                </div>
+                            </div>
+                        }
+                    </section>
+
+                    @if (_demandeSortante is not null || _demandesEntrantes.Count > 0)
+                    {
+                        <section class="profil-section">
+                            <div class="section-entete">
+                                <h2>@Texte["DemandesAttente", "Demandes en attente"]</h2>
+                            </div>
+
+                            <div class="demandes">
+                                @if (_demandeSortante is not null)
+                                {
+                                    <div class="demande">
+                                        <h3>@Texte["DemandeEnvoyee", "Demande envoyée"]</h3>
+                                        <p>
+                                            @Texte["FusionVers", "Fusion vers"] <strong>@_demandeSortante.Cible.Nom</strong>
+                                            — @Texte["NomConserve", "nom conservé"] : <strong>@_demandeSortante.NomConserve</strong>.
+                                        </p>
+                                        <div class="details-fusion">
+                                            <div>@((_demandeSortante.Cible.DiscordUsername ?? _demandeSortante.Cible.DiscordDisplayName) is not null ? $"Discord : {_demandeSortante.Cible.DiscordDisplayName ?? "?"} ({_demandeSortante.Cible.DiscordUsername ?? "?"})" : Texte["AucunCompteDiscord", "Pas de compte Discord lié"])</div>
+                                            <div>@ResumeActivite(_demandeSortante.Cible)</div>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(_demandeSortante.Motif))
+                                        {
+                                            <div class="details-fusion">@Texte["Motif", "Motif"] : @_demandeSortante.Motif</div>
+                                        }
+                                        <button type="button" class="btn btn-danger" @onclick="AnnulerMaDemande">@Texte["AnnulerDemande", "Annuler ma demande"]</button>
+                                    </div>
+                                }
+
+                                @foreach (FusionAffichage demande in _demandesEntrantes)
+                                {
+                                    <div class="demande">
+                                        <h3>@Texte.Formater("DemandeDe", "Demande de {0}", demande.Demandeur.Nom)</h3>
+                                        <p>@Texte["NomConserve", "Nom conservé"] : <strong>@demande.NomConserve</strong>.</p>
+                                        <div class="details-fusion">
+                                            <div>@((demande.Demandeur.DiscordUsername ?? demande.Demandeur.DiscordDisplayName) is not null ? $"Discord : {demande.Demandeur.DiscordDisplayName ?? "?"} ({demande.Demandeur.DiscordUsername ?? "?"})" : Texte["AucunCompteDiscord", "Pas de compte Discord lié"])</div>
+                                            <div>@ResumeActivite(demande.Demandeur)</div>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(demande.Motif))
+                                        {
+                                            <div class="details-fusion">@Texte["Motif", "Motif"] : @demande.Motif</div>
+                                        }
+                                        <div class="actions">
+                                            <button type="button" class="btn" @onclick="() => AccepterFusion(demande.Id)">@Texte["Accepter", "Accepter"]</button>
+                                            <button type="button" class="btn btn-danger" @onclick="() => RefuserFusion(demande.Id)">@Texte["Refuser", "Refuser"]</button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </section>
+                    }
+                </div>
+            </main>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <main class="profil-page profil-page--centre">
+            <a class="btn" href="/login/discord">@Texte["ConnexionDiscord", "Se connecter avec Discord"]</a>
+        </main>
+    </NotAuthorized>
+</AuthorizeView>

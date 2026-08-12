@@ -1,0 +1,199 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject Traductions Texte
+
+<CascadingAuthenticationState>
+    <div class="navbar">
+        <a href="@SeoUtils.LocaliserChemin("/", Texte.CodeLangue)" class="logo">
+            <img src="@Assets["Pictures/LogoMyDemonList-96.png"]" alt="My Demon List" width="52" height="52" fetchpriority="high" />
+        </a>
+
+        <nav id="nav-root" data-indicator-key="@GetIndicatorKey()" aria-label="@Texte["NavigationPrincipale", "Navigation principale"]" @onmouseleave="HandleNavMouseLeave">
+            <a href="@SeoUtils.LocaliserChemin("/", Texte.CodeLangue)" data-nav-key="/" class="nav-item" @onmouseover="@(() => SetHoveredItem("/"))">@Texte["Accueil", "Accueil"]</a>
+            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminListe(), Texte.CodeLangue)" data-nav-key="/liste" class="nav-item nav-item--conditionnel nav-item--liste @(ListeSession.ListeId is not null ? "visible" : "")" @onmouseover="@(() => SetHoveredItem("/liste"))">@Texte["Liste", "Liste"]</a>
+            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminGestion(), Texte.CodeLangue)" data-nav-key="/liste/gerer" class="nav-item nav-item--gerer @(_peutGererListe ? "visible" : "")" @onmouseover="@(() => SetHoveredItem("/liste/gerer"))">@Texte["GererListe", "Gérer la liste"]</a>
+            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminClassement(), Texte.CodeLangue)" data-nav-key="/classement" class="nav-item nav-item--conditionnel nav-item--classement @(ListeSession.ListeId is not null ? "visible" : "")" @onmouseover="@(() => SetHoveredItem("/classement"))">@Texte["Classement", "Classement"]</a>
+            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminSoumission(), Texte.CodeLangue)" data-nav-key="/soumettre-une-reussite" class="nav-item nav-item--conditionnel nav-item--soumettre @(ListeSession.ListeId is not null ? "visible" : "")" @onmouseover="@(() => SetHoveredItem("/soumettre-une-reussite"))">@Texte["SoumettreReussite", "Soumettre une réussite"]</a>
+
+            <div class="@GetIndicatorClass()" id="nav-indicator"></div>
+
+            <div class="nav-mirror" id="nav-mirror" aria-hidden="true">
+                <span class="nav-item nav-mirror-item">@Texte["Accueil", "Accueil"]</span>
+                <span class="nav-item nav-mirror-item nav-item--conditionnel nav-item--liste @(ListeSession.ListeId is not null ? "visible" : "")">@Texte["Liste", "Liste"]</span>
+                <span class="nav-item nav-mirror-item nav-item--gerer @(_peutGererListe ? "visible" : "")">@Texte["GererListe", "Gérer la liste"]</span>
+                <span class="nav-item nav-mirror-item nav-item--conditionnel nav-item--classement @(ListeSession.ListeId is not null ? "visible" : "")">@Texte["Classement", "Classement"]</span>
+                <span class="nav-item nav-mirror-item nav-item--conditionnel nav-item--soumettre @(ListeSession.ListeId is not null ? "visible" : "")">@Texte["SoumettreReussite", "Soumettre une réussite"]</span>
+            </div>
+        </nav>
+
+        <AuthorizeView>
+            <Authorized>
+                @{
+                    string? id = (context.User.FindFirst("discord:id")?.Value);
+                    string? avatar = context.User.FindFirst("discord:avatar")?.Value;
+                    string avatarUrl = !string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(avatar)
+                    ? $"https://cdn.discordapp.com/avatars/{id}/{avatar}.png?size=64"
+                    : "https://cdn.discordapp.com/embed/avatars/0.png";
+                    string name = _displayName ?? Texte["MonCompte", "Mon compte"];
+                }
+
+                <div class="zone-droite">
+                    @if (!string.IsNullOrEmpty(ListeSession.ListeDiscordUrl))
+                    {
+                        <a class="btn-invite-discord"
+                           href="@ListeSession.ListeDiscordUrl"
+                           target="_blank" rel="noopener"
+                           aria-label="@Texte["RejoindreDiscord", "Rejoindre le serveur Discord de la liste"]"
+                           title="@Texte["RejoindreDiscord", "Rejoindre le serveur Discord de la liste"]"
+                           data-duration="0"
+                           data-loop-ms="1250">
+                            <img class="gif-hover"
+                                 data-src="@Assets["Pictures/Discord.gif"]"
+                                 src=""
+                                 width="60" height="60"
+                                 alt="Discord">
+                        </a>
+                    }
+                    <div class="bloc-notifications">
+                        <button type="button"
+                                class="bouton-notifications-nav @(_panneauNotificationsOuvert ? "actif" : "")"
+                                aria-label="@Texte["Notifications", "Notifications"]"
+                                title="@Texte["Notifications", "Notifications"]"
+                                aria-expanded="@_panneauNotificationsOuvert"
+                                aria-controls="panneau-notifications"
+                                @onclick="BasculerPanneauNotificationsAsync">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+                            </svg>
+                            @if (_notificationsNonLues > 0)
+                            {
+                                <span class="compteur-notifications">@(_notificationsNonLues > 99 ? "99+" : _notificationsNonLues)</span>
+                            }
+                        </button>
+
+                        @if (_panneauNotificationsOuvert)
+                        {
+                            <button type="button" class="overlay-notifications" aria-label="@Texte["Fermer", "Fermer"]" @onclick="FermerPanneauNotifications"></button>
+                            <section id="panneau-notifications" class="panneau-notifications" aria-label="@Texte["Notifications", "Notifications"]">
+                                <header class="entete-notifications-nav">
+                                    <div>
+                                        <h2>@Texte["Notifications", "Notifications"]</h2>
+                                        @if (_notificationsNonLues > 0)
+                                        {
+                                            <span>@Texte.Formater("NotificationsNonLuesCompte", "{0} non lue(s)", _notificationsNonLues)</span>
+                                        }
+                                    </div>
+                                    @if (_notificationsNonLues > 0)
+                                    {
+                                        <button type="button" @onclick="MarquerToutesNotificationsCommeLuesAsync">
+                                            @Texte["ToutMarquerLuCourt", "Tout lire"]
+                                        </button>
+                                    }
+                                </header>
+
+                                <div class="filtres-notifications-nav">
+                                    <button type="button" class="@ClasseFiltreNotifications(FiltreNotifications.NonLues)" @onclick="() => _filtreNotifications = FiltreNotifications.NonLues">
+                                        @Texte["NonLues", "Non lues"]
+                                    </button>
+                                    <button type="button" class="@ClasseFiltreNotifications(FiltreNotifications.Lues)" @onclick="() => _filtreNotifications = FiltreNotifications.Lues">
+                                        @Texte["Lues", "Lues"]
+                                    </button>
+                                </div>
+
+                                <div class="corps-notifications-nav">
+                                    @if (_chargementNotifications)
+                                    {
+                                        <div class="notifications-nav-vide">@Texte["Chargement", "Chargement..."]</div>
+                                    }
+                                    else if (!NotificationsAffichees.Any())
+                                    {
+                                        <div class="notifications-nav-vide">
+                                            <strong>@Texte["AucuneNotification", "Aucune notification"]</strong>
+                                            <span>@Texte["AucuneNotificationAideCourte", "Les nouvelles informations apparaîtront ici."]</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (Notification notification in NotificationsAffichees)
+                                        {
+                                            <article class="notification-nav-item @(notification.DateLecture is null ? "non-lue" : "")">
+                                                @if (!string.IsNullOrWhiteSpace(notification.Lien))
+                                                {
+                                                    <button type="button" class="notification-nav-principale" @onclick="() => OuvrirNotificationAsync(notification)">
+                                                        <span class="symbole-notification-nav @ClasseTypeNotification(notification.Type)" aria-hidden="true">@SymboleTypeNotification(notification.Type)</span>
+                                                        <span class="texte-notification-nav">
+                                                            <strong>@notification.Titre</strong>
+                                                            <span>@notification.Message</span>
+                                                            <time datetime="@notification.DateCreation.ToString("O")">@FormaterDateNotification(notification.DateCreation)</time>
+                                                        </span>
+                                                        <span class="fleche-notification-nav" aria-hidden="true">›</span>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <div class="notification-nav-principale notification-nav-sans-lien">
+                                                        <span class="symbole-notification-nav @ClasseTypeNotification(notification.Type)" aria-hidden="true">@SymboleTypeNotification(notification.Type)</span>
+                                                        <span class="texte-notification-nav">
+                                                            <strong>@notification.Titre</strong>
+                                                            <span>@notification.Message</span>
+                                                            <time datetime="@notification.DateCreation.ToString("O")">@FormaterDateNotification(notification.DateCreation)</time>
+                                                        </span>
+                                                    </div>
+                                                }
+                                                @if (notification.DateLecture is null)
+                                                {
+                                                    <button type="button"
+                                                            class="marquer-notification-lue"
+                                                            title="@Texte["MarquerCommeLue", "Marquer comme lue"]"
+                                                            aria-label="@Texte["MarquerCommeLue", "Marquer comme lue"]"
+                                                            @onclick="() => MarquerNotificationCommeLueAsync(notification)">
+                                                        <span aria-hidden="true">✓</span>
+                                                    </button>
+                                                }
+                                            </article>
+                                        }
+                                    }
+                                </div>
+                            </section>
+                        }
+                    </div>
+                    <div class="bloc-compte">
+                        <input type="checkbox" id="compte-open" class="toggle-compte" />
+
+                        <label for="compte-open" class="compte-toggle" role="button" aria-haspopup="menu" aria-controls="menu-compte">
+                            <img class="avatar-discord" src="@avatarUrl" alt="@Texte.Formater("AvatarDe", "Avatar de {0}", name)" />
+                            <span class="texte-compte">@name</span>
+                            <span class="etat @_statusClass" aria-label="@Texte["Statut", "Statut"]"></span>
+                            <span class="chevron" aria-hidden="true"></span>
+                        </label>
+
+                        <div id="menu-compte" class="menu-compte" role="menu">
+                            <div class="en-tete">
+                                <img class="avatar-discord" src="@avatarUrl" alt="" />
+                                <div>
+                                    <div class="nom">@name</div>
+                                    <div class="sous">@Texte["ConnecteDiscord", "Connecté via Discord"]</div>
+                                </div>
+                            </div>
+
+                            <a class="item" href="/profil" role="menuitem">@Texte["ModifierProfil", "Modifier le profil"]</a>
+                            @if (_peutAccederAdmin)
+                            {
+                                <a class="item" href="/admin" role="menuitem">@Texte["Administration", "Administration"]</a>
+                            }
+                            <a class="item item--danger" href="/logout" role="menuitem">@Texte["Deconnexion", "Déconnexion"]</a>
+                        </div>
+                        <label for="compte-open" class="overlay-fermeture" aria-hidden="true"></label>
+                    </div>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="zone-droite">
+                    <a class="bouton-discord" href="/login/discord" target="_blank" rel="noopener">
+                        <img class="icone-discord" src="@Assets["Pictures/Discord.svg"]" alt="" aria-hidden="true" />
+                        @Texte["ConnexionDiscord", "Se connecter avec Discord"]
+                    </a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</CascadingAuthenticationState>

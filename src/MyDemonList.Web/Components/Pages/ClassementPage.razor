@@ -1,0 +1,362 @@
+﻿@page "/classement"
+
+@page "/liste/{ListeId:int}/{Slug}/classement"
+@inject Traductions Texte
+
+<SeoHead Titre="@ObtenirTitrePage()"
+         Description="@ObtenirDescriptionSeo()"
+         CheminCanonique="@ObtenirCheminCanonique()"
+         CheminImage="@ObtenirImageSeo()"
+         TexteAlternatifImage="@ObtenirTexteAlternatifImageSeo()"
+         Auteur="@ObtenirAuteurSeo()"
+         NePasIndexer="@NePasIndexer"
+         JsonLd="@ObtenirJsonLd()" />
+
+<h1 class="visually-hidden">@ObtenirTitrePage()</h1>
+
+<div class="article">
+    <div class="liste-utilisateur">
+        <div class="barre-outil">
+            <label class="visually-hidden" for="recherche-joueur">@Texte["RechercherJoueur", "Rechercher un joueur..."]</label>
+            <input id="recherche-joueur" class="recherche-joueur" type="search" @bind="_searchQuery" @bind:event="oninput" placeholder="@Texte["RechercherJoueur", "Rechercher un joueur..."]" autocomplete="off" spellcheck="false" />
+            <button class="bouton-tri" @onclick="ToggleMenuTri">@Texte["Trier", "Trier"]</button>
+        </div>
+
+        @if (_afficherMenuTri)
+        {
+            <div class="modal-backdrop @ClasseFermetureMenuTri" @onclick="FermerMenuTri"></div>
+            <div class="modal-panel @ClasseFermetureMenuTri" @onclick="FermerMenuTri">
+                <div class="modal-card is-large" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h2>@Texte["ParametresClassement", "Paramètres du classement"]</h2>
+                        <button class="modal-close" title="@Texte["FermerParametres", "Fermer les paramètres du classement"]" @onclick="FermerMenuTri">×</button>
+                    </div>
+                    <div class="modal-grid">
+                        <div class="modal-left">
+                            <div class="sort-tabs">
+                                <button class="@TabClassEnAttente(TabVue.Players)"
+                                    @onclick="() => TabEnAttente(TabVue.Players)">@Texte["Joueurs", "Joueurs"]</button>
+                                <button class="@TabClassEnAttente(TabVue.Creators)"
+                                    @onclick="() => TabEnAttente(TabVue.Creators)">@Texte["Createurs", "Créateurs"]</button>
+                                <button class="@TabClassEnAttente(TabVue.Wins)"
+                                    @onclick="() => TabEnAttente(TabVue.Wins)">@Texte["NiveauxReussis", "Niveaux réussis"]</button>
+                            </div>
+
+                            @if (_tabEnAttente == TabVue.Players)
+                            {
+                                <div class="trie-card">
+                                    <h3>@Texte["TriJoueurs", "Tri joueurs"]</h3>
+                                    <label><input type="radio" name="p" value="PointsDesc"
+                                            @onchange="(_) => _enAttenteTriParJoueur = TriParJoueur.PointsDesc"
+                                            checked="@(@_enAttenteTriParJoueur == TriParJoueur.PointsDesc)" /> @Texte["PointsDesc", "Plus de points"]</label>
+                                    <label><input type="radio" name="p" value="PointsAsc"
+                                            @onchange="(_) => _enAttenteTriParJoueur = TriParJoueur.PointsAsc"
+                                            checked="@(@_enAttenteTriParJoueur == TriParJoueur.PointsAsc)" /> @Texte["PointsAsc", "Moins de points"]</label>
+                                    <label><input type="radio" name="p" value="NameAsc"
+                                            @onchange="(_) => _enAttenteTriParJoueur = TriParJoueur.NameAsc"
+                                            checked="@(@_enAttenteTriParJoueur == TriParJoueur.NameAsc)" /> @Texte["NomAZ", "Nom de A à Z"]</label>
+                                    <label><input type="radio" name="p" value="NameDesc"
+                                            @onchange="(_) => _enAttenteTriParJoueur = TriParJoueur.NameDesc"
+                                            checked="@(@_enAttenteTriParJoueur == TriParJoueur.NameDesc)" /> @Texte["NomZA", "Nom de Z à A"]</label>
+                                </div>
+                            }
+                            else if (_tabEnAttente == TabVue.Creators)
+                            {
+                                <div class="trie-card">
+                                    <h3>@Texte["TriCreateurs", "Tri créateurs"]</h3>
+                                    <label><input type="radio" name="c" value="CountDesc"
+                                            @onchange="(_) => _enAttenteTriParCreateur = TriParCreateur.CountDesc"
+                                            checked="@(@_enAttenteTriParCreateur == TriParCreateur.CountDesc)" /> @Texte["CreationsDesc", "Plus de créations"]</label>
+                                    <label><input type="radio" name="c" value="CountAsc"
+                                            @onchange="(_) => _enAttenteTriParCreateur = TriParCreateur.CountAsc"
+                                            checked="@(@_enAttenteTriParCreateur == TriParCreateur.CountAsc)" /> @Texte["CreationsAsc", "Moins de créations"]</label>
+                                    <label><input type="radio" name="c" value="NameAsc"
+                                            @onchange="(_) => _enAttenteTriParCreateur = TriParCreateur.NameAsc"
+                                            checked="@(@_enAttenteTriParCreateur == TriParCreateur.NameAsc)" /> @Texte["NomAZ", "Nom de A à Z"]</label>
+                                    <label><input type="radio" name="c" value="NameDesc"
+                                            @onchange="(_) => _enAttenteTriParCreateur = TriParCreateur.NameDesc"
+                                            checked="@(@_enAttenteTriParCreateur == TriParCreateur.NameDesc)" /> @Texte["NomZA", "Nom de Z à A"]</label>
+                                </div>
+                            }
+                            else if (_tabEnAttente == TabVue.Wins)
+                            {
+                                <div class="trie-card">
+                                    <h3>@Texte["TriReussites", "Tri réussites"]</h3>
+                                    <label><input type="radio" name="w" value="WinsDesc"
+                                            @onchange="(_) => _enAttenteTriParVictoire = TriParVictoire.WinsDesc"
+                                            checked="@(@_enAttenteTriParVictoire == TriParVictoire.WinsDesc)" /> @Texte["ReussitesDesc", "Plus de réussites"]</label>
+                                    <label><input type="radio" name="w" value="WinsAsc"
+                                            @onchange="(_) => _enAttenteTriParVictoire = TriParVictoire.WinsAsc"
+                                            checked="@(@_enAttenteTriParVictoire == TriParVictoire.WinsAsc)" /> @Texte["ReussitesAsc", "Moins de réussites"]</label>
+                                    <label><input type="radio" name="w" value="NameAsc"
+                                            @onchange="(_) => _enAttenteTriParVictoire = TriParVictoire.NameAsc"
+                                            checked="@(@_enAttenteTriParVictoire == TriParVictoire.NameAsc)" /> @Texte["NomAZ", "Nom de A à Z"]</label>
+                                    <label><input type="radio" name="w" value="NameDesc"
+                                            @onchange="(_) => _enAttenteTriParVictoire = TriParVictoire.NameDesc"
+                                            checked="@(@_enAttenteTriParVictoire == TriParVictoire.NameDesc)" /> @Texte["NomZA", "Nom de Z à A"]</label>
+                                </div>
+                            }
+
+                            <div class="sort-actions">
+                                <button class="bouton-appliquer" @onclick="AppliquerLeTriEtFermer">@Texte["Appliquer", "Appliquer"]</button>
+                                <button class="bouton-reset" @onclick="ResetSort">@Texte["Reinitialiser", "Réinitialiser"]</button>
+                            </div>
+                        </div>
+                        <div class="modal-right">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (_utilisateursAvecPoints == null && _createursAvecNiveaux == null)
+        {
+            <p>@Texte["ChargementClassement", "Chargement des classements..."]</p>
+        }
+        else
+        {
+            @switch (_tabActuel)
+            {
+                case TabVue.Players:
+                    @foreach ((UtilisateurAvecPoints utilisateur, int index) in ObtenirLaVueJoueur()
+                            .Where(u => u.Nom?.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ?? false)
+                            .Select((u, i) => (u, i)))
+                    {
+                        <a href="@ObtenirCheminUtilisateur(utilisateur.Id)"
+                           aria-current="@(_utilisateurSelectionne?.Id == utilisateur.Id ? "true" : null)"
+                           class="utilisateur-groupe">
+                            <p class="utilisateur-groupe-index">#@utilisateur.Classement</p>
+                            @if (utilisateur.AvatarUrl is not null)
+                            {
+                                <img class="avatar-joueur" src="@utilisateur.AvatarUrl" alt="" loading="lazy" />
+                            }
+                            <p class="@ObtenirClassBackground(utilisateur.Id) utilisateur-groupe-nom">
+                                @utilisateur.Nom
+                            </p>
+                            <p class="utilisateur-groupe-nombre">@utilisateur.TotalPoints @Texte["Points", "Points"]</p>
+                        </a>
+                    }
+                    break;
+
+                case TabVue.Creators:
+                    @foreach ((CreateurAvecNiveaux createur, int index) in ObtenirLaVueCreateur()
+                            .Where(c => c.Nom?.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ?? false)
+                            .Select((c, i) => (c, i)))
+                    {
+                        <a href="@ObtenirCheminUtilisateur(createur.Id)"
+                           aria-current="@(_utilisateurSelectionne?.Id == createur.Id ? "true" : null)"
+                           class="utilisateur-groupe">
+                            <p class="utilisateur-groupe-index">#@createur.Classement</p>
+                            @if (createur.AvatarUrl is not null)
+                            {
+                                <img class="avatar-joueur" src="@createur.AvatarUrl" alt="" loading="lazy" />
+                            }
+                            <p class="@ObtenirClassBackground(createur.Id) utilisateur-groupe-nom">
+                                @createur.Nom
+                            </p>
+                            <p class="utilisateur-groupe-nombre">@createur.NombreNiveaux @Texte["Creations", "Créations"]</p>
+                        </a>
+                    }
+                    break;
+
+                case TabVue.Wins:
+                    @foreach ((UtilisateurAvecPoints utilisateur, int index) in ObtenirLaVueVictoire()
+                            .Where(u => u.Nom?.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ?? false)
+                            .Select((u, i) => (u, i)))
+                    {
+                        <a href="@ObtenirCheminUtilisateur(utilisateur.Id)"
+                           aria-current="@(_utilisateurSelectionne?.Id == utilisateur.Id ? "true" : null)"
+                           class="utilisateur-groupe">
+                            <p class="utilisateur-groupe-index">#@utilisateur.Classement</p>
+                            @if (utilisateur.AvatarUrl is not null)
+                            {
+                                <img class="avatar-joueur" src="@utilisateur.AvatarUrl" alt="" loading="lazy" />
+                            }
+                            <p class="@ObtenirClassBackground(utilisateur.Id) utilisateur-groupe-nom">
+                                @utilisateur.Nom
+                            </p>
+                            <p class="utilisateur-groupe-nombre">@utilisateur.TotalNiveauxReussis @Texte["NiveauxReussis", "Niveaux réussis"]</p>
+                        </a>
+                    }
+                    break;
+            }
+        }
+    </div>
+
+    <div class="detail-utilisateur">
+        @if (_utilisateurSelectionne == null)
+        {
+            <div class="etat-vide-detail">
+                <strong>@Texte["AucunJoueurSelectionne", "Aucun joueur sélectionné"]</strong>
+                <span>@Texte["SelectionnerJoueurAide", "Sélectionnez un joueur dans le classement pour afficher son profil."]</span>
+            </div>
+        }
+        else
+        {
+            <div class="detail-contenu">
+                <header class="profil-joueur">
+                    <div class="profil-identite">
+                        @if (_utilisateurSelectionne.AvatarUrl is not null)
+                        {
+                            <img class="avatar-joueur avatar-joueur--grand" src="@_utilisateurSelectionne.AvatarUrl"
+                                alt="" decoding="async" />
+                        }
+
+                        <div class="profil-texte">
+                            <span class="profil-label">@Texte["ProfilJoueur", "Profil du joueur"]</span>
+                            <div class="profil-nom">
+                                @if (_utilisateurSelectionne.Classement > 0)
+                                {
+                                    <span class="profil-rang">#@_utilisateurSelectionne.Classement</span>
+                                }
+                                <h2>@_utilisateurSelectionne.Nom</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-joueur">
+                        @if (_utilisateurSelectionne.TotalPoints > 0)
+                        {
+                            <div class="stat-joueur">
+                                <span>@Texte["Points", "Points"]</span>
+                                <strong>@_utilisateurSelectionne.TotalPoints</strong>
+                            </div>
+                        }
+                        @if (_utilisateurSelectionne.TotalNiveauxReussis > 0)
+                        {
+                            <div class="stat-joueur">
+                                <span>@Texte["NiveauxReussis", "Niveaux réussis"]</span>
+                                <strong>@_utilisateurSelectionne.TotalNiveauxReussis</strong>
+                            </div>
+                        }
+                        @if (_utilisateurSelectionne.TotalNiveauxCreer > 0)
+                        {
+                            <div class="stat-joueur">
+                                <span>@Texte["NiveauxCrees", "Niveaux créés"]</span>
+                                <strong>@_utilisateurSelectionne.TotalNiveauxCreer</strong>
+                            </div>
+                        }
+                    </div>
+                </header>
+
+                <div class="sections-niveaux">
+                    @if (_niveauxReussis != null && _niveauxReussis.Any())
+                    {
+                        <section class="section-niveaux section-niveaux--reussis">
+                            <div class="section-niveaux-entete">
+                                <h2>@Texte["NiveauxReussis", "Niveaux réussis"]</h2>
+                                <span class="compteur-section">@_niveauxReussis.Count</span>
+                            </div>
+                            <div class="cartes-niveaux">
+                                @foreach (NiveauAvecPoints niveau in _niveauxReussis)
+                                {
+                                    <div class="carte-niveau carte-niveau--reussi"
+                                        style=@($"--mini:url('/MiniaturesNiveaux/{niveau.Id}.png')")>
+                                        <a class="carte-niveau-lien" href="@ObtenirCheminNiveau(niveau.Id)" aria-label="@Texte.Formater("OuvrirNiveau", "Ouvrir le niveau {0}", niveau.Nom)"></a>
+                                        <span class="rang">#@niveau.ClassementPosition</span>
+                                        <div class="meta">
+                                            <span class="titre">@niveau.Nom</span>
+                                            <div class="jetons">
+                                                <span class="jeton jeton-points">+@niveau.Points pts</span>
+                                                @if (niveau.Duree is not 0)
+                                                {
+                                                    <span class="jeton">@ConvertirDuree(niveau.Duree)</span>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(niveau.Video))
+                                        {
+                                            <a class="lien-preuve" href="@niveau.Video" target="_blank" rel="ugc noopener noreferrer"
+                                                @onclick:stopPropagation="true">@Texte["Preuve", "Preuve"] <span aria-hidden="true">↗</span></a>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </section>
+                    }
+
+                    @if (_niveauxVerifies != null && _niveauxVerifies.Any())
+                    {
+                        <section class="section-niveaux section-niveaux--verifies">
+                            <div class="section-niveaux-entete">
+                                <h2>@Texte["NiveauxVerifies", "Niveaux vérifiés"]</h2>
+                                <span class="compteur-section">@_niveauxVerifies.Count</span>
+                            </div>
+                            <div class="cartes-niveaux">
+                                @foreach (NiveauAvecPoints niveau in _niveauxVerifies)
+                                {
+                                    <div class="carte-niveau carte-niveau--verifie"
+                                        style=@($"--mini:url('/MiniaturesNiveaux/{niveau.Id}.png')")>
+                                        <a class="carte-niveau-lien" href="@ObtenirCheminNiveau(niveau.Id)" aria-label="@Texte.Formater("OuvrirNiveau", "Ouvrir le niveau {0}", niveau.Nom)"></a>
+                                        <span class="rang">#@niveau.ClassementPosition</span>
+                                        <div class="meta">
+                                            <span class="titre">@niveau.Nom</span>
+                                            <div class="jetons">
+                                                <span class="jeton jeton-points">+@niveau.Points pts</span>
+                                                @if (niveau.Duree is not 0)
+                                                {
+                                                    <span class="jeton">@ConvertirDuree(niveau.Duree)</span>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(niveau.UrlVerification))
+                                        {
+                                            <a class="lien-preuve" href="@niveau.UrlVerification" target="_blank"
+                                                rel="ugc noopener noreferrer" @onclick:stopPropagation="true">@Texte["Verification", "Vérification"] <span
+                                                    aria-hidden="true">↗</span></a>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </section>
+                    }
+
+                    @if (_niveauxCrees != null && _niveauxCrees.Any())
+                    {
+                        <section class="section-niveaux section-niveaux--crees">
+                            <div class="section-niveaux-entete">
+                                <h2>@Texte["NiveauxCrees", "Niveaux créés"]</h2>
+                                <span class="compteur-section">@_niveauxCrees.Count</span>
+                            </div>
+                            <div class="cartes-niveaux">
+                                @foreach (NiveauSimple niveau in _niveauxCrees)
+                                {
+                                    <div class="carte-niveau carte-niveau--cree"
+                                        style=@($"--mini:url('/MiniaturesNiveaux/{niveau.Id}.png')")>
+                                        <a class="carte-niveau-lien" href="@ObtenirCheminNiveau(niveau.Id)" aria-label="@Texte.Formater("OuvrirNiveau", "Ouvrir le niveau {0}", niveau.Nom)"></a>
+                                        <span class="rang">#@niveau.ClassementPosition</span>
+                                        <div class="meta">
+                                            <span class="titre">@niveau.Nom</span>
+                                            @if (niveau.Duree is not 0)
+                                            {
+                                                <div class="jetons">
+                                                    <span class="jeton">@ConvertirDuree(niveau.Duree)</span>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(niveau.Video))
+                                        {
+                                            <a class="lien-preuve" href="@niveau.Video" target="_blank" rel="ugc noopener noreferrer"
+                                                @onclick:stopPropagation="true">@Texte["Verification", "Vérification"] <span aria-hidden="true">↗</span></a>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </section>
+                    }
+
+                    @if (_niveauxReussis?.Any() != true && _niveauxVerifies?.Any() != true && _niveauxCrees?.Any() != true)
+                    {
+                        <div class="aucune-activite">
+                            <strong>@Texte["AucunNiveauAfficher", "Aucun niveau à afficher"]</strong>
+                            <span>@Texte["AucuneActivite", "Ce joueur n'a pas encore de réussite, de vérification ou de création."]</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

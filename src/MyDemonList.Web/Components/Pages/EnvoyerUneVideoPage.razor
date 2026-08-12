@@ -1,0 +1,119 @@
+﻿@page "/soumettre-une-reussite"
+
+@page "/liste/{ListeId:int}/{Slug}/soumettre-une-reussite"
+@inject Traductions Texte
+
+<SeoHead Titre="@ObtenirTitrePage()"
+         Description="@ObtenirDescriptionSeo()"
+         CheminCanonique="@ObtenirCheminCanonique()"
+         NePasIndexer="true" />
+
+<CascadingAuthenticationState>
+    <div class="article">
+        <div class="page-bg @(_showBgA ? "is-active" : "")" style=@($"background-image:url('{_bgA}')")></div>
+        <div class="page-bg @(_showBgA ? "" : "is-active")" style=@($"background-image:url('{_bgB}')")></div>
+        <div class="page-tint"></div>
+        <div class="soumettre-un-niveau-container">
+            <h1>@Texte["SoumettreReussite", "Soumettre une réussite"]</h1>
+            <EditForm Model="_newSubmission">
+                <DataAnnotationsValidator />
+                <div class="formulaire">
+                    @if (_isAuthenticated is false)
+                    {
+                        <div class="champ-autocomplete">
+                            <div class="input-style-container">
+                                <input type="text" id="nom-utilisateur" @bind="_currentUtilisateurInput"
+                                       @onkeydown="HandleKeyDownUtilisateur"
+                                       @oninput="OnUtilisateurInput"
+                                       @onblur="HandleFocusOutUtilisateur"
+                                       @onfocus="OnFocusUtilisateur"
+                                       autocomplete="new-password" required />
+                                <label for="nom-utilisateur">@Texte["NomJoueur", "Nom de joueur :"]</label>
+                            </div>
+                            @if (_utilisateurSuggestions.Any())
+                            {
+                                <ul class="suggestions">
+                                    @foreach ((string value, int index) in _utilisateurSuggestions.Select((value, index) => (value, index)))
+                                    {
+                                        <li class="list-group-item @(_selectedUtilisateurIndex == index ? "active" : "")"
+                                            @onmousedown:preventDefault="true"
+                                            @onclick="(() => SelectUtilisateur(value))">
+                                            @value
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="connected-user-badge">
+                            @Texte["ConnecteEnTantQue", "Connecté en tant que"] <strong>@_connectedUsername</strong>
+                        </div>
+                    }
+
+                    <div class="champ-autocomplete">
+                        <input type="text" id="fake-nom-niveau" autocomplete="username" />
+                        <div class="input-style-container">
+                            <input type="text" id="nom-niveau" @bind="_currentNiveauInput"
+                                   @onkeydown="HandleKeyDownNiveau"
+                                   @oninput="OnNiveauInput"
+                                   @onblur="HandleFocusOutNiveau"
+                                   @onfocus="OnFocusNiveau"
+                                   autocomplete="new-password" required />
+                            <label for="nom-niveau">@Texte["NomNiveau", "Nom du niveau :"]</label>
+                        </div>
+                        @if (_niveauSuggestions.Any())
+                        {
+                            <ul class="suggestions">
+                                @foreach ((NiveauSuggestion value, int index) in _niveauSuggestions.Select((value, index) => (value, index)))
+                                {
+                                    <li class="list-group-item @(_selectedNiveauIndex == index ? "active" : "")"
+                                        @onmousedown:preventDefault="true"
+                                        @onclick="(() => SelectNiveau(value))">
+                                        <span class="suggestion-niveau-nom">@value.Nom</span>
+                                        <span class="suggestion-niveau-details">@Texte.Formater("PublieParCourt", "par {0}", value.Publisher)</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+
+                    <div class="input-style-container">
+                        <input type="text" id="url-video" @bind="_newSubmission.UrlVideo" autocomplete="new-password" required />
+                        <label for="url-video">@Texte["UrlVideo", "URL de la vidéo :"]</label>
+                    </div>
+
+                    <div class="input-style-container champ-raw-footage @(AfficherChampRawFootage() ? "visible" : "")">
+                        <input type="text" id="url-raw-footage" @bind="_newSubmission.RawFootageUrl" autocomplete="new-password" required />
+                        <label for="url-raw-footage">@Texte["UrlRawFootage", "URL du Raw Footage :"]</label>
+                    </div>
+
+                    @if (_soumissionExistante is not null)
+                    {
+                        <div class="message-info">
+                            @Texte.Formater("SoumissionExistante", "Vous avez déjà une soumission en attente pour ce niveau (envoyée le {0}). Valider ci-dessous la remplacera par cette nouvelle vidéo.", _soumissionExistante.DateSoumission.ToString("d"))
+                        </div>
+                    }
+
+                    <button type="button" @onclick="ValidateAndSubmit">@(_soumissionExistante is not null ? Texte["MettreAJour", "Mettre à jour"] : Texte["Soumettre", "Soumettre"])</button>
+
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="message-error">@_errorMessage</div>
+                    }
+
+                    @if (_isLoading)
+                    {
+                        <div class="spinner"></div>
+                    }
+
+                    @if (_submissionSuccess)
+                    {
+                        <div class="message-valid">@Texte["SoumissionReussie", "Soumission réussie !"]</div>
+                    }
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</CascadingAuthenticationState>

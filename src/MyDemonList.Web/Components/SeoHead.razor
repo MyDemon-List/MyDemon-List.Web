@@ -1,0 +1,142 @@
+@inject NavigationManager NavigationManager
+
+<PageTitle>@TitreDocument</PageTitle>
+<HeadContent>
+    <meta name="description" content="@Description" />
+    <meta name="robots" content="@DirectivesRobots" />
+    <link rel="canonical" href="@UrlCanonique" />
+    @if (!NePasIndexer)
+    {
+        @foreach (string langue in Traductions.LanguesSupportees)
+        {
+            <link rel="alternate" hreflang="@langue" href="@ObtenirUrlLocalisee(CheminCanonique, langue)" />
+        }
+        <link rel="alternate" hreflang="x-default" href="@UrlParDefaut" />
+    }
+    <meta property="og:site_name" content="My Demon List" />
+    <meta property="og:locale" content="@LocaleCourante" />
+    @if (!NePasIndexer)
+    {
+        @foreach (string langue in Traductions.LanguesSupportees.Where(x => x != CodeLangue))
+        {
+            <meta property="og:locale:alternate" content="@ObtenirLocale(langue)" />
+        }
+    }
+    <meta property="og:type" content="@TypeOpenGraph" />
+    <meta property="og:title" content="@TitreDocument" />
+    <meta property="og:description" content="@Description" />
+    <meta property="og:url" content="@UrlCanonique" />
+    <meta property="og:image" content="@UrlImage" />
+    <meta property="og:image:secure_url" content="@UrlImage" />
+    <meta property="og:image:type" content="@TypeImage" />
+    <meta property="og:image:alt" content="@TexteAlternatifImage" />
+    @if (!string.IsNullOrWhiteSpace(Auteur))
+    {
+        <meta name="author" content="@Auteur" />
+    }
+    <meta name="twitter:card" content="@CarteTwitter" />
+    <meta name="twitter:title" content="@TitreDocument" />
+    <meta name="twitter:description" content="@Description" />
+    <meta name="twitter:image" content="@UrlImage" />
+    <meta name="twitter:image:alt" content="@TexteAlternatifImage" />
+    @if (!string.IsNullOrWhiteSpace(JsonLd))
+    {
+        <script type="application/ld+json">@((MarkupString)JsonLd)</script>
+    }
+</HeadContent>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Titre { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Description { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string CheminCanonique { get; set; } = "/";
+
+    [Parameter]
+    public string CheminImage { get; set; } = "/Pictures/LogoMyDemonList.png";
+
+    [Parameter]
+    public string TexteAlternatifImage { get; set; } = "Logo My Demon List";
+
+    [Parameter]
+    public string TypeOpenGraph { get; set; } = "website";
+
+    [Parameter]
+    public string CarteTwitter { get; set; } = "summary";
+
+    [Parameter]
+    public bool NePasIndexer { get; set; }
+
+    [Parameter]
+    public bool AjouterNomSite { get; set; } = true;
+
+    [Parameter]
+    public string? Auteur { get; set; }
+
+    [Parameter]
+    public string? JsonLd { get; set; }
+
+    [Parameter]
+    public string? Langue { get; set; }
+
+    [Parameter]
+    public string? LocaleOpenGraph { get; set; }
+
+    [Parameter]
+    public IReadOnlyDictionary<string, string>? AlternativesLinguistiques { get; set; }
+
+    [Parameter]
+    public string? CheminParDefaut { get; set; }
+
+    private string TitreDocument => !AjouterNomSite || Titre.Equals("My Demon List", StringComparison.OrdinalIgnoreCase)
+        ? Titre
+        : $"{Titre} | My Demon List";
+
+    private string DirectivesRobots => NePasIndexer
+        ? "noindex, follow, noarchive"
+        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+
+    private string UrlCanonique => ObtenirUrlLocalisee(CheminCanonique, CodeLangue);
+    private string UrlParDefaut => ObtenirUrlLocalisee(CheminParDefaut ?? CheminCanonique, "fr");
+    private string UrlImage => ObtenirUrlAbsolue(CheminImage, conserverRequete: true);
+    private string CodeLangue => (Langue ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName).ToLowerInvariant() switch
+    {
+        "en" => "en",
+        "es" => "es",
+        _ => "fr"
+    };
+    private string LocaleCourante => LocaleOpenGraph ?? ObtenirLocale(CodeLangue);
+    private string TypeImage => Path.GetExtension(new Uri(UrlImage).AbsolutePath).ToLowerInvariant() switch
+    {
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".gif" => "image/gif",
+        ".webp" => "image/webp",
+        _ => "image/png"
+    };
+
+    private string ObtenirUrlAbsolue(string chemin, bool conserverRequete = false)
+    {
+        bool estUrlWebAbsolue = Uri.TryCreate(chemin, UriKind.Absolute, out Uri? absolue)
+            && (absolue.Scheme == Uri.UriSchemeHttp || absolue.Scheme == Uri.UriSchemeHttps);
+        Uri uri = estUrlWebAbsolue ? absolue! : NavigationManager.ToAbsoluteUri(chemin);
+
+        string url = uri.GetLeftPart(UriPartial.Path);
+        return conserverRequete ? $"{url}{uri.Query}" : url;
+    }
+
+    private string ObtenirUrlLocalisee(string chemin, string langue)
+    {
+        string url = ObtenirUrlAbsolue(chemin);
+        return langue.Equals("fr", StringComparison.OrdinalIgnoreCase) ? url : $"{url}?lang={langue}";
+    }
+
+    private static string ObtenirLocale(string langue) => langue switch
+    {
+        "en" => "en_US",
+        "es" => "es_ES",
+        _ => "fr_FR"
+    };
+}

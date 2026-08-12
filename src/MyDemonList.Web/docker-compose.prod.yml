@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:17
+    container_name: database-prod
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./Sql/01-Create.sql:/docker-entrypoint-initdb.d/01-Create.sql
+      - ./Sql/02-Seed.sql:/docker-entrypoint-initdb.d/02-Seed.sql
+      - ./Sql/04-Notifications.sql:/docker-entrypoint-initdb.d/04-Notifications.sql
+    networks:
+      - backend
+    restart: unless-stopped
+
+  app:
+    image: ghcr.io/the-band-list/thebandlist.web:latest
+    container_name: mydemonlist-app-prod
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://0.0.0.0:10000
+      - AUTHENTICATION__DISCORD__CLIENTID=${AUTHENTICATION__DISCORD__CLIENTID}
+      - AUTHENTICATION__DISCORD__CLIENTSECRET=${AUTHENTICATION__DISCORD__CLIENTSECRET}
+      - AUTHENTICATION__DISCORD__CALLBACKPATH=${AUTHENTICATION__DISCORD__CALLBACKPATH}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - ADMIN_DISCORD_ID=${ADMIN_DISCORD_ID}
+    volumes:
+      - app_images:/var/mydemonlist/images
+      - app_keys:/var/mydemonlist/keys
+    ports:
+      - "8080:10000"
+    depends_on:
+      - db
+    networks:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  app_images:
+  app_keys:
+
+networks:
+  backend:
+    driver: bridge

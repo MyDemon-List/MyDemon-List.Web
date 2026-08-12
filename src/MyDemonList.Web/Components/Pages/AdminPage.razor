@@ -1,0 +1,325 @@
+@page "/admin"
+
+<SeoHead Titre="Administration du site"
+         Description="Administration de My Demon List."
+         CheminCanonique="/admin"
+         NePasIndexer="true" />
+
+@if (_isLoading)
+{
+    <p class="chargement">Chargement...</p>
+}
+else if (!_estAutorise)
+{
+    <p class="chargement">Accès refusé.</p>
+}
+else
+{
+    <div class="gestion-page">
+      <div class="gestion-page-contenu">
+        <nav class="onglets" aria-label="Navigation de l'administration du site">
+            <button type="button" class="onglet @(_ongletActuel == Onglet.Fusions ? "active" : "")"
+                    aria-pressed="@(_ongletActuel == Onglet.Fusions)" @onclick="() => _ongletActuel = Onglet.Fusions">
+                <span>Fusions</span>
+                @if (_fusionsEnAttente.Count > 0)
+                {
+                    <span class="onglet-compteur">@_fusionsEnAttente.Count</span>
+                }
+            </button>
+            <button type="button" class="onglet @(_ongletActuel == Onglet.Quotas ? "active" : "")"
+                    aria-pressed="@(_ongletActuel == Onglet.Quotas)" @onclick="() => _ongletActuel = Onglet.Quotas">
+                <span>Demandes de quota</span>
+                @if ((_demandesNiveaux.Count + _demandesListes.Count) > 0)
+                {
+                    <span class="onglet-compteur">@(_demandesNiveaux.Count + _demandesListes.Count)</span>
+                }
+            </button>
+            @if (_estChef)
+            {
+                <button type="button" class="onglet @(_ongletActuel == Onglet.Admins ? "active" : "")"
+                        aria-pressed="@(_ongletActuel == Onglet.Admins)" @onclick="() => _ongletActuel = Onglet.Admins">
+                    <span>Admins du site</span>
+                </button>
+            }
+            <button type="button" class="onglet @(_ongletActuel == Onglet.Notifications ? "active" : "")"
+                    aria-pressed="@(_ongletActuel == Onglet.Notifications)" @onclick="() => _ongletActuel = Onglet.Notifications">
+                <span>Notifications</span>
+            </button>
+        </nav>
+
+        @if (_ongletActuel == Onglet.Fusions)
+        {
+            <div class="carte-admin">
+                <h2>Demandes de fusion de compte</h2>
+
+                @if (!string.IsNullOrEmpty(_fusionMessage))
+                {
+                    <div class="alert">@_fusionMessage</div>
+                }
+
+                @if (_fusionsEnAttente.Count == 0)
+                {
+                    <p class="aucun-niveau">Aucune demande de fusion en attente.</p>
+                }
+                else
+                {
+                    @foreach (FusionAffichage demande in _fusionsEnAttente)
+                    {
+                        <div class="ligne-demande">
+                            <div class="infos-demande">
+                                <strong>@demande.Demandeur.Nom</strong> → <strong>@demande.Cible.Nom</strong>
+                                <span class="details-demande">nom conservé : @demande.NomConserve — demandé le @demande.DateDemande.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+
+                            <div class="comptes-fusion">
+                                <div class="compte-fusion">
+                                    <span class="compte-fusion-label">Demandeur</span>
+                                    <strong>@demande.Demandeur.Nom</strong>
+                                    <span class="details-demande">@((demande.Demandeur.DiscordUsername ?? demande.Demandeur.DiscordDisplayName) is not null ? $"Discord : {demande.Demandeur.DiscordDisplayName ?? "?"} ({demande.Demandeur.DiscordUsername ?? "?"})" : "Pas de compte Discord lié")</span>
+                                    <span class="details-demande">@ResumeActiviteFusion(demande.Demandeur)</span>
+                                </div>
+                                <div class="compte-fusion">
+                                    <span class="compte-fusion-label">Cible</span>
+                                    <strong>@demande.Cible.Nom</strong>
+                                    <span class="details-demande">@((demande.Cible.DiscordUsername ?? demande.Cible.DiscordDisplayName) is not null ? $"Discord : {demande.Cible.DiscordDisplayName ?? "?"} ({demande.Cible.DiscordUsername ?? "?"})" : "Pas de compte Discord lié")</span>
+                                    <span class="details-demande">@ResumeActiviteFusion(demande.Cible)</span>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(demande.Motif))
+                            {
+                                <div class="details-demande">Motif : @demande.Motif</div>
+                            }
+
+                            @if (EstImpliqueDansFusion(demande))
+                            {
+                                <div class="details-demande">Vous êtes concerné par cette demande — un autre admin du site doit la traiter.</div>
+                            }
+                            else
+                            {
+                                <div class="actions">
+                                    <button type="button" class="btn" @onclick="() => AccepterFusionAdmin(demande)">Accepter</button>
+                                    <button type="button" class="btn-danger" @onclick="() => RefuserFusionAdmin(demande)">Refuser</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else if (_ongletActuel == Onglet.Quotas)
+        {
+            <div class="carte-admin">
+                <h2>Demandes de niveaux supplémentaires</h2>
+
+                @if (!string.IsNullOrEmpty(_quotaMessage))
+                {
+                    <div class="alert">@_quotaMessage</div>
+                }
+
+                @if (_demandesNiveaux.Count == 0)
+                {
+                    <p class="aucun-niveau">Aucune demande en attente.</p>
+                }
+                else
+                {
+                    @foreach (DemandeNiveauxAffichage demande in _demandesNiveaux)
+                    {
+                        <div class="carte-demande-quota">
+                            <div class="infos-demande">
+                                <strong>@demande.ListeNom</strong> par @demande.DemandeurNom
+                                <span class="details-demande">Palier : @demande.LimiteActuelle → @demande.ProchaineLimite niveaux — demandé le @demande.DateDemande.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+
+                            <div class="scroll-noms">
+                                @foreach (string nom in demande.NomsNiveaux)
+                                {
+                                    <div class="nom-niveau-ligne">@nom</div>
+                                }
+                            </div>
+
+                            <div class="actions">
+                                <button type="button" class="btn" @onclick="() => AccepterDemandeNiveaux(demande.Id)">Accepter</button>
+                                <button type="button" class="btn-danger" @onclick="() => RefuserDemandeNiveaux(demande.Id)">Refuser</button>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <h2>Demandes de listes supplémentaires</h2>
+
+                @if (_demandesListes.Count == 0)
+                {
+                    <p class="aucun-niveau">Aucune demande en attente.</p>
+                }
+                else
+                {
+                    @foreach (DemandeListesAffichage demande in _demandesListes)
+                    {
+                        <div class="carte-demande-quota">
+                            <div class="infos-demande">
+                                <strong>@demande.DemandeurNom</strong>
+                                <span class="details-demande">Palier : @demande.LimiteActuelle → @demande.ProchaineLimite listes — demandé le @demande.DateDemande.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+
+                            @if (demande.ListesExistantes.Count > 0)
+                            {
+                                <div class="liens-listes">
+                                    @foreach (ListeRef liste in demande.ListesExistantes)
+                                    {
+                                        <button type="button" class="chip chip-bouton" @onclick="() => PrevisualiserListe(liste)">@liste.Nom</button>
+                                    }
+                                </div>
+                            }
+
+                            <div class="actions">
+                                <button type="button" class="btn" @onclick="() => AccepterDemandeListes(demande.Id)">Accepter</button>
+                                <button type="button" class="btn-danger" @onclick="() => RefuserDemandeListes(demande.Id)">Refuser</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else if (_ongletActuel == Onglet.Admins && _estChef)
+        {
+            <div class="carte-admin">
+                <h2>Admins du site</h2>
+
+                @if (!string.IsNullOrEmpty(_adminsErreur))
+                {
+                    <div class="alert alert-error">@_adminsErreur</div>
+                }
+
+                @if (_admins.Count == 0)
+                {
+                    <p class="aucun-niveau">Aucun admin du site pour l'instant.</p>
+                }
+                else
+                {
+                    @foreach (AdminLigne admin in _admins)
+                    {
+                        <div class="membre-ligne">
+                            <div class="membre-infos">
+                                <span class="membre-nom">@admin.NomSite</span>
+                                <span class="membre-discord">Discord : @(admin.DiscordDisplayName ?? "?") (@(admin.DiscordUsername ?? "?"))</span>
+                            </div>
+                            <button type="button" class="btn-danger" @onclick="() => DemanderRevocationAdmin(admin)">Retirer</button>
+                        </div>
+                    }
+                }
+
+                @if (_afficherConfirmationRevocationAdmin && _adminARevoquer is not null)
+                {
+                    <div class="modal-backdrop" @onclick="AnnulerRevocationAdmin"></div>
+                    <div class="modal-confirm">
+                        <p>Retirer le rôle d'admin du site à @_adminARevoquer.NomSite ?</p>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-danger" @onclick="ConfirmerRevocationAdmin">Confirmer</button>
+                            <button type="button" @onclick="AnnulerRevocationAdmin">Annuler</button>
+                        </div>
+                    </div>
+                }
+
+                <div class="ajout-membre champ champ-autocomplete">
+                    <h3>Nommer un admin</h3>
+                    <label for="admin-recherche">Rechercher (nom dans le site, pseudo Discord ou tag Discord)</label>
+                    <input id="admin-recherche" class="input" value="@_rechercheAdminInput" @oninput="OnRechercheAdminInput" autocomplete="off" placeholder="Rechercher un utilisateur relié à Discord..." />
+                    @if (_rechercheAdminSuggestions.Count > 0)
+                    {
+                        <div class="suggestions">
+                            @foreach (DiscordUtilisateurSuggestion candidat in _rechercheAdminSuggestions)
+                            {
+                                <div class="suggestion suggestion-discord" @onclick="() => SelectCandidatAdmin(candidat)">
+                                    <span class="suggestion-nom">@candidat.NomSite</span>
+                                    <span class="suggestion-discord-info">Discord : @(candidat.DiscordDisplayName ?? "?") (@(candidat.DiscordUsername ?? "?"))</span>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (_candidatAdminSelectionne is not null)
+                    {
+                        <div class="actions-formulaire">
+                            <button type="button" class="btn" @onclick="NommerAdminAsync" disabled="@_nominationEnCours">
+                                @(_nominationEnCours ? "Nomination..." : $"Nommer {_candidatAdminSelectionne.NomSite} admin du site")
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (_ongletActuel == Onglet.Notifications)
+        {
+            <div class="carte-admin carte-envoi-notification">
+                <div>
+                    <h2>Envoyer une notification</h2>
+                    <p class="details-demande">Le message apparaîtra dans le centre de notifications du destinataire.</p>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_notificationAdminMessage))
+                {
+                    <div class="alert">@_notificationAdminMessage</div>
+                }
+
+                @if (_estChef)
+                {
+                    <label class="choix-tous">
+                        <input type="checkbox" checked="@_notificationPourTous" @onchange="BasculerNotificationPourTous" />
+                        <span>
+                            <strong>Tous les utilisateurs</strong>
+                            <small>Envoie le message à tous les comptes reliés à Discord.</small>
+                        </span>
+                    </label>
+                }
+
+                @if (!_notificationPourTous)
+                {
+                    <div class="champ champ-autocomplete">
+                        <label for="notification-destinataire">Destinataire</label>
+                        <input id="notification-destinataire"
+                               class="input"
+                               value="@_rechercheDestinataireNotification"
+                               @oninput="RechercherDestinataireNotification"
+                               autocomplete="off"
+                               placeholder="Nom du site, pseudo ou tag Discord..." />
+                        @if (_suggestionsDestinatairesNotification.Count > 0)
+                        {
+                            <div class="suggestions">
+                                @foreach (DestinataireNotification destinataire in _suggestionsDestinatairesNotification)
+                                {
+                                    <button type="button" class="suggestion suggestion-discord" @onclick="() => SelectionnerDestinataireNotification(destinataire)">
+                                        <span class="suggestion-nom">@destinataire.NomSite</span>
+                                        <span class="suggestion-discord-info">Discord : @(destinataire.DiscordDisplayName ?? "?") (@(destinataire.DiscordUsername ?? "?"))</span>
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                <div class="champ">
+                    <label for="notification-titre">Titre</label>
+                    <input id="notification-titre" class="input" @bind="_titreNotification" maxlength="160" placeholder="Une information importante" />
+                </div>
+
+                <div class="champ">
+                    <label for="notification-message">Message</label>
+                    <textarea id="notification-message" class="input textarea-notification" @bind="_messageNotification" maxlength="2000" placeholder="Écrivez le message à afficher..."></textarea>
+                </div>
+
+                <div class="champ">
+                    <label for="notification-lien">Lien interne <span class="details-demande">(facultatif)</span></label>
+                    <input id="notification-lien" class="input" @bind="_lienNotification" maxlength="500" placeholder="/profil" />
+                </div>
+
+                <div class="actions-formulaire">
+                    <button type="button" class="btn" @onclick="EnvoyerNotificationAdminAsync" disabled="@_envoiNotificationEnCours">
+                        @(_envoiNotificationEnCours ? "Envoi..." : "Envoyer la notification")
+                    </button>
+                </div>
+            </div>
+        }
+      </div>
+    </div>
+}

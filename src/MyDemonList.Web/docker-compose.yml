@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres
+    container_name: database
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./Sql/01-Create.sql:/docker-entrypoint-initdb.d/01-Create.sql
+      - ./Sql/02-Seed.sql:/docker-entrypoint-initdb.d/02-Seed.sql
+      - ./Sql/03-SeedDev.sql:/docker-entrypoint-initdb.d/03-SeedDev.sql
+      - ./Sql/04-Notifications.sql:/docker-entrypoint-initdb.d/04-Notifications.sql
+    ports:
+      - "21555:5432"
+    networks:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge

@@ -1,0 +1,250 @@
+﻿@page "/liste"
+@page "/liste/{ListeId:int}/{Slug?}"
+@using MyDemonList.Web.Utils
+@inject Traductions Texte
+
+<SeoHead Titre="@ObtenirTitrePage()"
+         Description="@ObtenirDescriptionSeo()"
+         CheminCanonique="@ObtenirCheminCanonique()"
+         CheminImage="@ObtenirImageSeo()"
+         TexteAlternatifImage="@ObtenirTexteAlternatifImageSeo()"
+         Auteur="@ObtenirAuteurSeo()"
+         TypeOpenGraph="article"
+         CarteTwitter="summary_large_image"
+         NePasIndexer="@NePasIndexer"
+         JsonLd="@ObtenirJsonLd()" />
+
+<h1 class="visually-hidden">@(_listeCourante is null ? "Demon list Geometry Dash" : _listeCourante.Nom)</h1>
+
+<div class="article">
+    @if (_niveauSelectionne is not null)
+    {
+        <div class="fond-page-pile">
+            <div class="fond-page couche-a @(_fondActif == "a" ? "est-visible" : null)"
+                 style=@($"background-image:url('{_fondA ?? $"/MiniaturesNiveaux/{_niveauSelectionne.Id}.png"}')")></div>
+
+            <div class="fond-page couche-b @(_fondActif == "b" ? "est-visible" : null)"
+                 style=@($"background-image:url('{_fondB ?? $"/MiniaturesNiveaux/{_niveauSelectionne.Id}.png"}')")></div>
+        </div>
+        <div class="voile-page"></div>
+    }
+
+    <div class="liste-niveaux">
+        <div class="filtrage-container sticky-filter">
+            <div class="filter-control search-control">
+                <label class="visually-hidden" for="recherche-niveau">@Texte["RechercherNiveau", "Rechercher un niveau..."]</label>
+                <svg class="filter-icon" aria-hidden="true" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m20 20-4-4"></path>
+                </svg>
+                <input id="recherche-niveau"
+                       type="search"
+                       value="@_recherche"
+                       @oninput="@(e => OnRechercheChanged(e.Value?.ToString() ?? string.Empty))"
+                       placeholder="@Texte["RechercherNiveau", "Rechercher un niveau..."]"
+                       autocomplete="off"
+                       spellcheck="false" />
+                @if (!string.IsNullOrEmpty(_recherche))
+                {
+                    <button class="clear-search" type="button" title="@Texte["EffacerRecherche", "Effacer la recherche"]" aria-label="@Texte["EffacerRecherche", "Effacer la recherche"]" @onclick="EffacerRecherche">
+                        <svg aria-hidden="true" viewBox="0 0 24 24">
+                            <path d="m7 7 10 10M17 7 7 17"></path>
+                        </svg>
+                    </button>
+                }
+            </div>
+
+            <div class="filter-control duration-control">
+                <button class="duration-trigger" type="button" aria-haspopup="listbox" aria-label="@Texte["FiltrerNiveaux", "Filtrer les niveaux"]">
+                    <svg class="filter-icon" aria-hidden="true" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="8.5"></circle>
+                        <path d="M12 7.5V12l3 2"></path>
+                    </svg>
+                    <span>@GetSelectedDureeLabel()</span>
+                    <svg class="select-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                        <path d="m7 10 5 5 5-5"></path>
+                    </svg>
+                </button>
+
+                <div class="duration-options" role="listbox" aria-label="@Texte["FiltrerNiveaux", "Filtres disponibles"]">
+                    <button type="button" role="option" aria-selected="@(_filtreDuree == string.Empty)" class="duration-option @(_filtreDuree == string.Empty ? "active" : null)" @onclick='() => OnFiltreDureeChanged(string.Empty)'>
+                        <span>@Texte["TousDurees", "Toutes les durées"]</span>
+                    </button>
+                    <button type="button" role="option" aria-selected="@(_filtreDuree == "short")" class="duration-option @(_filtreDuree == "short" ? "active" : null)" @onclick='() => OnFiltreDureeChanged("short")'>
+                        <span>Short</span><small>@Texte["MoinsUneMinute", "moins de 1 min"]</small>
+                    </button>
+                    <button type="button" role="option" aria-selected="@(_filtreDuree == "long")" class="duration-option @(_filtreDuree == "long" ? "active" : null)" @onclick='() => OnFiltreDureeChanged("long")'>
+                        <span>Long</span><small>@Texte["UneDeuxMinutes", "1 à 2 min"]</small>
+                    </button>
+                    <button type="button" role="option" aria-selected="@(_filtreDuree == "xl")" class="duration-option @(_filtreDuree == "xl" ? "active" : null)" @onclick='() => OnFiltreDureeChanged("xl")'>
+                        <span>XL</span><small>@Texte["DeuxCinqMinutes", "2 à 5 min"]</small>
+                    </button>
+                    <button type="button" role="option" aria-selected="@(_filtreDuree == "xxl")" class="duration-option @(_filtreDuree == "xxl" ? "active" : null)" @onclick='() => OnFiltreDureeChanged("xxl")'>
+                        <span>XXL</span><small>@Texte["PlusCinqMinutes", "plus de 5 min"]</small>
+                    </button>
+                </div>
+            </div>
+
+            <button type="button"
+                    class="filter-control unfinished-filter @(_afficherSeulementNiveauxNonTermines ? "active" : null)"
+                    aria-pressed="@_afficherSeulementNiveauxNonTermines"
+                    title="@(!_peutFiltrerNiveauxNonTermines ? Texte["ConnexionRequise", "Connexion requise"] : null)"
+                    disabled="@(!_peutFiltrerNiveauxNonTermines)"
+                    @onclick="BasculerFiltreNiveauxNonTermines">
+                <span class="unfinished-indicator" aria-hidden="true"></span>
+                <span>@Texte["NiveauNonTermine", "Niveau non terminé"]</span>
+            </button>
+        </div>
+
+        @if (_isLoading)
+        {
+            <p>@Texte["ChargementNiveaux", "Chargement des niveaux..."]</p>
+        }
+        else if (!_niveauxFiltres.Any())
+        {
+            <p>@(_afficherSeulementNiveauxNonTermines ? Texte["AucunNiveauNonTermine", "Aucun niveau non terminé trouvé"] : Texte["AucunNiveau", "Aucun niveau trouvé"])</p>
+        }
+        else
+        {
+            <div class="liste-des-niveaux-container">
+                @foreach (Classement classement in _classements)
+                {
+                    Niveau? niveau = _niveauxFiltres.FirstOrDefault(n => n.Id == classement.NiveauId);
+                    if (niveau is null) { continue; }
+
+                    bool isSelected = _niveauSelectionne?.Id == niveau.Id;
+                    bool estReussi = _niveauxReussisParUtilisateurConnecte.Contains(niveau.Id);
+                    bool estEnAttente = !estReussi && _niveauxEnAttenteParUtilisateurConnecte.Contains(niveau.Id);
+                    string thumb = $"/MiniaturesNiveaux/{niveau.Id}.png";
+
+                    <a class=@($"level-strip{(isSelected ? " is-selected" : "")}")
+                       href="@ObtenirCheminNiveau(niveau)"
+                       aria-current="@(isSelected ? "true" : null)">
+                        <span class="level-bg" style=@($"background-image:url('{thumb}')")></span>
+                        <span class="shade"></span>
+
+                        <span class=@($"rank{(estReussi ? " rank-reussi" : estEnAttente ? " rank-en-attente" : "")}")
+                              title="@(estReussi ? Texte["DejaReussi", "Niveau déjà réussi"] : estEnAttente ? Texte["SoumissionAttente", "Soumission en attente de validation"] : null)">#@classement.ClassementPosition</span>
+
+                        <div class="meta">
+                            <span class="title">@niveau.Nom</span>
+                            <div class="chips">
+                                <span class="chip chip-points">@classement.Points pts</span>
+                                @if (niveau.Duree is not 0) {
+                                    <span class="chip">@ConvertirDuree(niveau.Duree)</span>
+                                }
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(niveau.Rating.ImageUrl))
+                        {
+                            <img class="badge" src="@niveau.Rating.ImageUrl"
+                                 alt="@niveau.Rating.Nom" loading="lazy" />
+                        }
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="detail-niveaux">
+        <div class="detail-inner">
+            @if (_niveauSelectionne is not null)
+            {
+                int pointsNiv = _classements.FirstOrDefault(x => x.NiveauId == _niveauSelectionne.Id)?.Points ?? 0;
+                string? urlIframe = VideoUtils.ObtenirUrlIframe(_niveauSelectionne.UrlVerification);
+                bool detailEstReussi = _niveauxReussisParUtilisateurConnecte.Contains(_niveauSelectionne.Id);
+                bool detailEstEnAttente = _niveauxEnAttenteParUtilisateurConnecte.Contains(_niveauSelectionne.Id);
+
+                <header class="detail-header">
+                    <div class="title-side">
+                        <h2 class="detail-title">@_niveauSelectionne.Nom</h2>
+                        <div class="detail-chips">
+                            <span class="chip">#@_classements.FirstOrDefault(c => c.NiveauId == _niveauSelectionne.Id)?.ClassementPosition</span>
+                            <span class="chip">@pointsNiv pts</span>
+                            @if (_niveauSelectionne.Duree is not 0)
+                            {
+                                <span class="chip">@ConvertirDuree(_niveauSelectionne.Duree)</span>
+                            }
+                        </div>
+                    </div>
+                    <img @key="_niveauSelectionne.Id"
+                         decoding="async"
+                         class="detail-difficulty"
+                         src="@_niveauSelectionne.Rating.ImageUrl"
+                         alt="@Texte["Difficulte", "Difficulté"] : @_niveauSelectionne.Rating.Nom" />
+                </header>
+                <div class="detail-people">
+                    <p>@Texte.Formater("CreePar", "Créé par : {0}", string.Join(", ", _createurs.Select(c => c.Nom)))</p>
+                    <p>@Texte.Formater("VerifiePar", "Vérifié par : {0}", _niveauSelectionne.Verifieur?.Nom)</p>
+                    <p>@Texte.Formater("PubliePar", "Publié par : {0}", _niveauSelectionne.Publisher?.Nom)</p>
+                </div>
+
+                @if (urlIframe is not null)
+                {
+                    <div class="media-card">
+                        <div class="video-16x9">
+                            <iframe class="niveaux-selectionner-iframe"
+                                    src="@urlIframe"
+                                    title="@Texte.Formater("VideoVerification", "Vidéo de vérification de {0}", _niveauSelectionne.Nom)"
+                                    loading="lazy"
+                                    frameborder="0"
+                                    allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+                }
+
+                <div class=@($"info-grid{(_niveauSelectionne.Duree is not 0 ? "" : " info-grid-deux-colonnes")}")>
+                    <div class="info-box"><span class="info-label">@Texte["Points", "Points"]</span><span class="info-value">@pointsNiv</span></div>
+                    <div class=@($"info-box info-box-copiable{(_idNiveauCopie ? " est-copie" : "")}")
+                         role="button"
+                         tabindex="0"
+                         title="@Texte["CopierIdentifiant", "Copier l'ID du niveau"]"
+                         @onclick="CopierIdNiveau">
+                        <span class="info-label">@Texte["IdentifiantNiveau", "ID du niveau"]</span>
+                        <span class="info-value">@_niveauSelectionne.IdDuNiveauDansLeJeu</span>
+                    </div>
+                    @if (_niveauSelectionne.Duree is not 0)
+                    {
+                        <div class="info-box"><span class="info-label">@Texte["Duree", "Durée"]</span><span class="info-value">@ConvertirDuree(_niveauSelectionne.Duree)</span></div>
+                    }
+                </div>
+
+                @if (!detailEstReussi && !detailEstEnAttente)
+                {
+                    <button type="button" class="bouton-envoyer-reussite" @onclick="EnvoyerReussiteClick">
+                        @Texte["SoumettreReussite", "Envoyer une réussite"]
+                    </button>
+                }
+
+                @if (_reussitesNiveau is not null)
+                {
+                    List<ReussiteNiveau> wins = _reussitesNiveau.Where(r => r.NiveauId == _niveauSelectionne.Id && r.Statut == "Validee").ToList();
+                    if (wins.Any())
+                    {
+                        @if (wins.Count is 1)
+                        {
+                            <h2 class="victoires">@Texte["Victoire", "Victoire"] : @wins.Count</h2>
+                        }
+                        else
+                        {
+                            <h2 class="victoires">@Texte["Victoires", "Victoires"] : @wins.Count</h2>
+                        }
+
+                        @foreach ((ReussiteNiveau value, int index) in wins.Select((value, index) => (value, index)))
+                        {
+                            <div class="win-row">
+                                <span class="win-index">#@(index + 1)</span>
+                                <a class="win-user" href="@(value.Utilisateur is null ? null : ObtenirCheminUtilisateur(value.Utilisateur.Id))">
+                                    @value.Utilisateur?.Nom
+                                </a>
+                                <a class="win-yt" href="@value.Video" target="_blank" rel="ugc noopener noreferrer">@Texte["Preuve", "Preuve"]</a>
+                            </div>
+                        }
+                    }
+                }
+            }
+        </div>
+    </div>
+</div>

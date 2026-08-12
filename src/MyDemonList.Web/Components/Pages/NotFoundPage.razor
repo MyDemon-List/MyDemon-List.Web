@@ -1,0 +1,11 @@
+@page "/404"
+@inject Traductions Texte
+
+<SeoHead Titre="@Texte["PageIntrouvable", "Page introuvable"]"
+         Description="@Texte["PageIntrouvableDescription", "La page demandée n'existe pas ou n'est plus disponible."]"
+         CheminCanonique="/404"
+         NePasIndexer="true" />
+
+<h1>404 — @Texte["PageIntrouvable", "Page introuvable"]</h1>
+<p>@Texte["PageIntrouvableTexte", "Cette page n'existe pas ou plus."]</p>
+<a href="@SeoUtils.LocaliserChemin("/", Texte.CodeLangue)">@Texte["RetourAccueil", "Retour à l'accueil"]</a>

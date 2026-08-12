@@ -1,0 +1,437 @@
+.profil-page {
+    width: 100%;
+    height: calc(100vh - 60px);
+    padding: 28px 16px 56px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.profil-page--centre {
+    display: grid;
+    place-items: center;
+}
+
+.profil-card {
+    width: min(100%, 760px);
+    margin: 0 auto;
+    overflow: hidden;
+    color: var(--white);
+    background: var(--surface-panel);
+    border: 1px solid #34363d;
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+}
+
+.profil-entete {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 22px;
+    background: #25272d;
+    border-bottom: 1px solid #34363d;
+}
+
+.avatar {
+    width: 86px;
+    height: 86px;
+    flex: 0 0 auto;
+    object-fit: cover;
+    border: 2px solid #454851;
+    border-radius: var(--radius-2xl);
+}
+
+.profil-identite {
+    min-width: 0;
+}
+
+.profil-identite h1 {
+    margin: 0 0 7px;
+    overflow: hidden;
+    color: var(--white);
+    font-size: 1.65rem;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.discord-infos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+}
+
+.discord-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.discord-label {
+    color: #858892;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.discord-value {
+    color: #c6c8cf;
+    font-size: 0.86rem;
+}
+
+.profil-section {
+    padding: 22px;
+}
+
+.profil-section + .profil-section {
+    border-top: 1px solid #34363d;
+}
+
+.section-entete {
+    margin-bottom: 15px;
+}
+
+.section-entete--action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.section-entete h2 {
+    margin: 0;
+    color: var(--white);
+    font-size: 1.05rem;
+}
+
+.section-entete p {
+    margin: 5px 0 0;
+    color: #8f929c;
+    font-size: 0.82rem;
+}
+
+.nom-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+}
+
+.input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    color: var(--white);
+    background: #282a30;
+    border: 1px solid #40424b;
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus {
+    border-color: var(--purple-focus);
+    box-shadow: 0 0 0 3px rgba(136, 27, 182, 0.16);
+}
+
+textarea.input {
+    min-height: 86px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    resize: vertical;
+}
+
+select.input {
+    color-scheme: dark;
+}
+
+.btn {
+    position: relative;
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 15px;
+    color: var(--white);
+    background: linear-gradient(180deg, #a62bd4, var(--main-purple));
+    border: 1px solid var(--white-12);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    box-shadow: 0 7px 16px rgba(70, 7, 96, 0.28), inset 0 1px 0 var(--white-14);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.btn:hover {
+    background: linear-gradient(180deg, #b338e0, #9421c2);
+    box-shadow: 0 10px 21px rgba(70, 7, 96, 0.34), inset 0 1px 0 var(--white-18);
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    box-shadow: 0 4px 10px rgba(70, 7, 96, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.15);
+    transform: translateY(0);
+}
+
+.btn:focus-visible {
+    outline: 2px solid #cd79ef;
+    outline-offset: 2px;
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+    transform: none;
+}
+
+.btn-secondary {
+    flex: 0 0 auto;
+    color: #eeeef2;
+    background: linear-gradient(180deg, #353740, #2a2c32);
+    border-color: #50535e;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2), inset 0 1px 0 var(--white-06);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(180deg, #3d3f49, #31333a);
+    border-color: #626570;
+    box-shadow: 0 9px 18px rgba(0, 0, 0, 0.24), inset 0 1px 0 var(--white-08);
+}
+
+.btn-danger {
+    color: #ffc7cc;
+    background: linear-gradient(180deg, #542a32, #3d2127);
+    border-color: #6d3741;
+    box-shadow: 0 6px 14px rgba(50, 8, 14, 0.24), inset 0 1px 0 var(--white-06);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(180deg, #65313b, #4a252c);
+    border-color: #85434e;
+    box-shadow: 0 9px 18px rgba(50, 8, 14, 0.29), inset 0 1px 0 var(--white-08);
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--white-30);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.alert {
+    margin-top: 12px;
+    padding: 10px 12px;
+    color: #d6d7dd;
+    background: #292b31;
+    border: 1px solid #3c3e46;
+    border-radius: var(--radius-sm);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.alert-success {
+    color: #c9f5d4;
+    background: #1c3023;
+    border-color: #2d5238;
+}
+
+.alert-error {
+    color: #ffcbd0;
+    background: #392126;
+    border-color: #603039;
+}
+
+.fusion-form {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    margin-top: 16px;
+    padding: 16px;
+    background: #25272d;
+    border: 1px solid #3a3c44;
+    border-radius: var(--radius-md);
+}
+
+.fusion-form h3 {
+    margin: 0;
+    font-size: 0.98rem;
+}
+
+.fusion-explication {
+    margin: -4px 0 2px;
+    color: #9699a3;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.champ,
+.champ-autocomplete {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.champ label,
+.champ-autocomplete label {
+    color: #c8c9d0;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.champ label span {
+    color: #858892;
+    font-weight: 400;
+}
+
+.suggestions {
+    position: absolute;
+    z-index: 10;
+    top: 100%;
+    right: 0;
+    left: 0;
+    margin-top: 4px;
+    overflow: hidden;
+    background: #292b31;
+    border: 1px solid #464852;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+}
+
+.suggestion {
+    display: block;
+    width: 100%;
+    padding: 9px 12px;
+    color: #eeeef1;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.suggestion:hover,
+.suggestion:focus-visible {
+    background: var(--border-default);
+    outline: none;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.demandes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.demande {
+    padding: 14px;
+    background: #25272d;
+    border: 1px solid #393b43;
+    border-radius: var(--radius-md);
+}
+
+.demande h3 {
+    margin: 0 0 7px;
+    font-size: 0.92rem;
+}
+
+.demande p {
+    margin: 0;
+    color: #d4d5da;
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.demande > .btn,
+.demande > .actions {
+    margin-top: 11px;
+}
+
+.details-fusion {
+    margin-top: 7px;
+    color: #9699a3;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.profil-loading {
+    display: grid;
+    width: 100%;
+    height: calc(100vh - 60px);
+    place-items: center;
+    color: #aeb0b9;
+}
+
+@media (max-width: 620px) {
+    .profil-page {
+        padding: 16px 10px 36px;
+    }
+
+    .profil-card {
+        border-radius: var(--radius-lg);
+    }
+
+    .profil-entete {
+        gap: 14px;
+        padding: 18px;
+    }
+
+    .avatar {
+        width: 68px;
+        height: 68px;
+        border-radius: var(--radius-lg);
+    }
+
+    .profil-identite h1 {
+        font-size: 1.35rem;
+    }
+
+    .discord-infos {
+        gap: 7px 18px;
+    }
+
+    .profil-section {
+        padding: 18px;
+    }
+
+    .section-entete--action {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .nom-form {
+        grid-template-columns: 1fr;
+    }
+
+    .nom-form .btn,
+    .section-entete--action .btn {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .input,
+    .btn {
+        transition: none;
+    }
+}

@@ -1,0 +1,77 @@
+﻿body {
+    margin: 0;
+    background-color: var(--main-background);
+    color: var(--text-primary);
+    font-family: "Roboto", sans-serif;
+    overflow-y: hidden;
+    overflow-x: hidden;
+}
+
+@font-face {
+    font-family: "Roboto";
+    src: url("Font/Roboto.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --main-purple: #881bb6;
+    --purple-hover: #a22cd7;
+    --purple-focus: #a33bd0;
+    --accent-magenta: #a000c7;
+    --accent-cyan: #40c9ff;
+    --accent-gradient: linear-gradient(180deg, var(--purple-hover), var(--main-purple));
+    --accent-gradient-diagonal: linear-gradient(135deg, #9d22ca, var(--main-purple));
+
+    --main-background: #23252b;
+    --surface-deep: #1b1c21;
+    --surface-panel: #1f2025;
+    --surface-card: #23242a;
+    --surface-control: #26272e;
+    --surface-control-alt: #292a31;
+    --surface-hover: #35363e;
+    --nav-bar-secondary: var(--white);
+    --secondary-background: rgb(var(--secondary-background-value));
+    --secondary-background-value: 54, 56, 59;
+    --black-background-transparent: rgba(12, 12, 12, 0.4);
+
+    --white: #ffffff;
+    --text-primary: var(--white);
+    --text-secondary-strong: #e7e7e7;
+    --text-secondary: #c7c7d1;
+    --text-soft: #a9aab3;
+    --text-muted: #999ba5;
+    --text-subtle: #92949e;
+
+    --border-subtle: var(--white-08);
+    --border-default: #363840;
+    --border-strong: #484a54;
+    --scrollbar-thumb: #999;
+    --scrollbar-thumb-hover: #b2b2b2;
+    --white-035: rgba(255, 255, 255, 0.035);
+    --white-04: rgba(255, 255, 255, 0.04);
+    --white-055: rgba(255, 255, 255, 0.055);
+    --white-06: rgba(255, 255, 255, 0.06);
+    --white-08: rgba(255, 255, 255, 0.08);
+    --white-10: rgba(255, 255, 255, 0.10);
+    --white-12: rgba(255, 255, 255, 0.12);
+    --white-14: rgba(255, 255, 255, 0.14);
+    --white-18: rgba(255, 255, 255, 0.18);
+    --white-20: rgba(255, 255, 255, 0.20);
+    --white-25: rgba(255, 255, 255, 0.25);
+    --white-30: rgba(255, 255, 255, 0.30);
+    --overlay-modal: rgba(0, 0, 0, 0.5);
+
+    --radius-xs: 8px;
+    --radius-sm: 10px;
+    --radius-md: 12px;
+    --radius-lg: 14px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
+    --radius-pill: 999px;
+
+    --shadow-card: 0 7px 18px rgba(0, 0, 0, 0.23), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    --shadow-panel: 0 10px 26px rgba(0, 0, 0, 0.24);
+    --shadow-floating: 0 12px 28px rgba(0, 0, 0, 0.25);
+}

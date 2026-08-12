@@ -1,0 +1,286 @@
+@page "/"
+@inject Traductions Texte
+
+<SeoHead Titre="@Texte["SeoAccueilTitre", "My Demon List — Créez et partagez vos demon lists Geometry Dash"]"
+         Description="@Texte["SeoSiteDescription", SeoUtils.DescriptionSite]"
+         CheminCanonique="/"
+         AjouterNomSite="false"
+         JsonLd="@SeoUtils.CreerJsonLdAccueil(NavigationManager.BaseUri, Texte["SeoSiteDescription", SeoUtils.DescriptionSite], Texte.CodeLangue)" />
+
+<div class="accueil-page">
+    @if (_isLoading)
+    {
+        <div class="chargement">
+            <span class="chargement-indicateur" aria-hidden="true"></span>
+            <span>@Texte["ChargementListes", "Chargement des listes..."]</span>
+        </div>
+    }
+    else
+    {
+        @if (_isAuthenticated)
+        {
+            <section class="section-listes section-personnelle">
+                <header class="entete-section entete-principal">
+                    <div class="entete-texte">
+                        <h1>@Texte["MesDemonLists", "Mes demon lists"]</h1>
+                        <p>@Texte["MesDemonListsDescription", "Retrouvez les listes que vous possédez ou que vous pouvez gérer."]</p>
+                    </div>
+                    <button type="button" class="btn btn-creer" @onclick="ToggleFormulaireCreation">
+                        @if (!_afficherFormulaireCreation)
+                        {
+                            <span class="btn-plus" aria-hidden="true">+</span>
+                        }
+                        @(_afficherFormulaireCreation ? Texte["Fermer", "Fermer"] : Texte["CreerListe", "Créer une liste"])
+                    </button>
+                </header>
+
+                @if (_afficherFormulaireCreation)
+                {
+                    @if (!PeutCreerListeSansDemande)
+                    {
+                        <div class="carte-formulaire">
+                            <div class="formulaire-entete">
+                                <h2>@Texte["LimiteListesAtteinte", "Limite de listes atteinte"]</h2>
+                            </div>
+                            @if (_demandeListesEnCours)
+                            {
+                                <div class="alert alert-info">
+                                    @Texte.Formater("DemandeLimiteEnCours", "Demande en cours de traitement (passage de {0} à {1} listes).", LimiteListesActuelle, ProchaineLimiteListes)
+                                </div>
+                            }
+                            else if (CooldownRestantListes is TimeSpan restant)
+                            {
+                                <div class="alert alert-info">
+                                    @Texte.Formater("DemandeRefuseeAttente", "Demande refusée. Vous pourrez redemander dans {0}.", FormaterDuree(restant))
+                                </div>
+                            }
+                            else
+                            {
+                                <p>@Texte.Formater("LimiteListes", "Vous avez atteint la limite de {0} listes.", LimiteListesActuelle)</p>
+                                <button type="button" class="btn" @onclick="DemanderAugmentationListes">
+                                    @Texte.Formater("DemanderNouvelleLimite", "Demander le passage à {0} listes", ProchaineLimiteListes)
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="carte-formulaire">
+                            <div class="formulaire-entete">
+                                <h2>@Texte["NouvelleDemonList", "Nouvelle demon list"]</h2>
+                                <p>@Texte["NouvelleDemonListDescription", "Donnez-lui un nom et choisissez si elle sera visible par tous."]</p>
+                            </div>
+
+                            <div class="formulaire-champs">
+                                <div class="champ">
+                                    <label for="nom-liste">@Texte["Nom", "Nom"]</label>
+                                    <input id="nom-liste" class="input" @bind="_nouveauNom" @bind:event="oninput"
+                                           placeholder="Ma demon list" maxlength="128" />
+                                </div>
+                                <div class="champ">
+                                    <label for="description-liste">@Texte["DescriptionOptionnelle", "Description (optionnel)"]</label>
+                                    <textarea id="description-liste" class="input textarea"
+                                              @bind="_nouvelleDescription" @bind:event="oninput"
+                                              placeholder="@Texte["DecrireListe", "Décrivez rapidement votre liste"]"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="champ-checkbox">
+                                <label class="option-publique">
+                                    <input type="checkbox" @bind="_nouvelleEstPublique" />
+                                    <span class="case-personnalisee" aria-hidden="true"></span>
+                                    <span class="option-publique-texte">
+                                        <strong>@Texte["ListePublique", "Liste publique"]</strong>
+                                        <small>@Texte["ListePubliqueAide", "Elle apparaîtra dans les listes de la communauté."]</small>
+                                    </span>
+                                </label>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(_erreurCreation))
+                            {
+                                <div class="alert alert-error">@_erreurCreation</div>
+                            }
+
+                            <div class="actions-formulaire">
+                                <button type="button" class="btn" @onclick="CreerListe" disabled="@_creationEnCours">
+                                    @(_creationEnCours ? Texte["Creation", "Création..."] : Texte["CreerListe", "Créer la liste"])
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+
+                @if (_listesPossedees.Count == 0)
+                {
+                    <div class="aucune-liste">
+                        <strong>@Texte["AucuneListe", "Aucune liste pour le moment"]</strong>
+                        <span>@Texte["AucuneListeAide", "Créez votre première demon list pour commencer."]</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="grille-listes">
+                        @foreach (Liste liste in _listesPossedees)
+                        {
+                            <article @key="liste.Id"
+                                     class="carte-liste @(_listesAvecFond.Contains(liste.Id) ? "carte-liste--illustree" : "carte-liste--defaut")"
+                                     @onclick="() => OuvrirListe(liste)">
+                                @if (_listesAvecFond.Contains(liste.Id))
+                                {
+                                    <span class="carte-liste-bg" style=@($"background-image:url('/BackgroundsListes/{liste.Id}.png')")></span>
+                                    <span class="carte-liste-shade"></span>
+                                }
+
+                                <div class="carte-contenu">
+                                    <div class="badges-carte">
+                                        <span class="badge @(liste.EstPublique ? "badge-public" : "badge-prive")">
+                                            @(liste.EstPublique ? Texte["Publique", "Publique"] : Texte["Privee", "Privée"])
+                                        </span>
+                                        @if (_rolesParListe.TryGetValue(liste.Id, out RoleListe role))
+                                        {
+                                            <span class="badge badge-role">@NomRole(role)</span>
+                                        }
+                                    </div>
+
+                                    <div class="corps-carte">
+                                        <h2 class="titre-carte">@liste.Nom</h2>
+                                        @if (!string.IsNullOrWhiteSpace(liste.Description))
+                                        {
+                                            <p class="description-carte">@liste.Description</p>
+                                        }
+                                    </div>
+
+                                    <footer class="carte-liste-pied">
+                                        <span class="nombre-niveaux">@NombreDeNiveaux(liste.Id) @LibelleNiveaux(liste.Id)</span>
+                                        @if (AfficherBoutonGerer(liste))
+                                        {
+                                            <button type="button" class="btn-gerer"
+                                                    @onclick="() => GererListe(liste)"
+                                                    @onclick:stopPropagation="true">@Texte["Gerer", "Gérer"]</button>
+                                        }
+                                    </footer>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
+
+            @if (_listesGerees.Count > 0)
+            {
+                <section class="section-listes section-gerees">
+                    <header class="entete-section">
+                        <div class="entete-texte">
+                            <h2>@Texte["ListesGerees", "Listes que je gère"]</h2>
+                            <p>@Texte["ListesGereesDescription", "Listes créées par d’autres membres sur lesquelles vous avez un rôle."]</p>
+                        </div>
+                        <span class="compteur-listes">@_listesGerees.Count</span>
+                    </header>
+
+                    <div class="grille-listes">
+                        @foreach (Liste liste in _listesGerees)
+                        {
+                            <article @key="liste.Id"
+                                     class="carte-liste @(_listesAvecFond.Contains(liste.Id) ? "carte-liste--illustree" : "carte-liste--defaut")"
+                                     @onclick="() => OuvrirListe(liste)">
+                                @if (_listesAvecFond.Contains(liste.Id))
+                                {
+                                    <span class="carte-liste-bg" style=@($"background-image:url('/BackgroundsListes/{liste.Id}.png')")></span>
+                                    <span class="carte-liste-shade"></span>
+                                }
+
+                                <div class="carte-contenu">
+                                    <div class="badges-carte">
+                                        <span class="badge @(liste.EstPublique ? "badge-public" : "badge-prive")">
+                                            @(liste.EstPublique ? Texte["Publique", "Publique"] : Texte["Privee", "Privée"])
+                                        </span>
+                                        @if (_rolesParListe.TryGetValue(liste.Id, out RoleListe role))
+                                        {
+                                            <span class="badge badge-role">@NomRole(role)</span>
+                                        }
+                                    </div>
+
+                                    <div class="corps-carte">
+                                        <h2 class="titre-carte">@liste.Nom</h2>
+                                        <p class="proprietaire-carte">@Texte.Formater("CreeePar", "Créée par {0}", liste.Utilisateur?.Nom ?? "?")</p>
+                                    </div>
+
+                                    <footer class="carte-liste-pied">
+                                        <span class="nombre-niveaux">@NombreDeNiveaux(liste.Id) @LibelleNiveaux(liste.Id)</span>
+                                        <button type="button" class="btn-gerer"
+                                                @onclick="() => GererListe(liste)"
+                                                @onclick:stopPropagation="true">@Texte["Gerer", "Gérer"]</button>
+                                    </footer>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </section>
+            }
+        }
+
+        <section class="section-listes section-publique @(!_isAuthenticated ? "section-publique--seule" : null)">
+            <header class="entete-section">
+                <div class="entete-texte">
+                    @if (_isAuthenticated)
+                    {
+                        <h2>Demon lists</h2>
+                    }
+                    else
+                    {
+                        <h1>Demon lists</h1>
+                    }
+                    <p>@Texte["DemonListsDescription", "Découvrez les listes partagées par la communauté."]</p>
+                </div>
+                <span class="compteur-listes">@_listesPubliques.Count</span>
+            </header>
+
+            @if (_listesPubliques.Count == 0)
+            {
+                <div class="aucune-liste">
+                    <strong>@Texte["AucuneListePublique", "Aucune liste publique"]</strong>
+                    <span>@Texte["AucuneListePubliqueAide", "Les listes rendues publiques apparaîtront ici."]</span>
+                </div>
+            }
+            else
+            {
+                <div class="grille-listes">
+                    @foreach (Liste liste in _listesPubliques)
+                    {
+                        <a @key="liste.Id"
+                           href="@SeoUtils.LocaliserChemin(SeoUtils.CheminListe(liste.Id, liste.Nom), Texte.CodeLangue)"
+                           class="carte-liste @(_listesAvecFond.Contains(liste.Id) ? "carte-liste--illustree" : "carte-liste--defaut")">
+                            @if (_listesAvecFond.Contains(liste.Id))
+                            {
+                                <span class="carte-liste-bg" style=@($"background-image:url('/BackgroundsListes/{liste.Id}.png')")></span>
+                                <span class="carte-liste-shade"></span>
+                            }
+
+                            <div class="carte-contenu">
+                                <div class="corps-carte">
+                                    <h2 class="titre-carte">@liste.Nom</h2>
+                                    @if (!string.IsNullOrWhiteSpace(liste.Description))
+                                    {
+                                        <p class="description-carte">@liste.Description</p>
+                                    }
+                                </div>
+
+                                <footer class="carte-liste-pied">
+                                    <span class="nombre-niveaux">@NombreDeNiveaux(liste.Id) @LibelleNiveaux(liste.Id)</span>
+                                    <span class="auteur-liste">@Texte.Formater("Par", "par {0}", liste.Utilisateur?.Nom ?? "?")</span>
+                                </footer>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+
+        @if (!_isAuthenticated)
+        {
+            <p class="invite-connexion">
+                <a href="/login/discord">@Texte["ConnexionDiscord", "Connectez-vous avec Discord"]</a> @Texte["ConnexionCreationListe", "pour créer votre propre demon list."]
+            </p>
+        }
+    }
+</div>
