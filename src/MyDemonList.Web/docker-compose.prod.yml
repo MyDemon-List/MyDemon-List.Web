@@ -11,12 +11,13 @@ services:
       - ./Sql/01-Create.sql:/docker-entrypoint-initdb.d/01-Create.sql
       - ./Sql/02-Seed.sql:/docker-entrypoint-initdb.d/02-Seed.sql
       - ./Sql/04-Notifications.sql:/docker-entrypoint-initdb.d/04-Notifications.sql
+      - ./Sql/05-DrapeauxUtilisateurs.sql:/docker-entrypoint-initdb.d/05-DrapeauxUtilisateurs.sql
     networks:
       - backend
     restart: unless-stopped
 
   app:
-    image: ghcr.io/the-band-list/thebandlist.web:latest
+    image: ghcr.io/mydemon-list/mydemon-list.web:latest
     container_name: mydemonlist-app-prod
     environment:
       - DB_HOST=db
