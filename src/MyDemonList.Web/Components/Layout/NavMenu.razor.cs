@@ -17,9 +17,6 @@ namespace MyDemonList.Web.Components.Layout
         private NavigationManager NavigationManager { get; set; } = default!;
 
         [Inject]
-        private DiscordPresenceService Presence { get; set; } = default!;
-
-        [Inject]
         private IServiceScopeFactory ScopeFactory { get; set; } = default!;
 
         [Inject]
@@ -66,12 +63,8 @@ namespace MyDemonList.Web.Components.Layout
         private string _currentUri = "/";
         private string _hoveredItem = "/liste";
         private string? _discordId;
-        private ulong _listenId;
         private bool _isHovering;
-        private string _statusClass = "etat--offline";
-        private CancellationTokenSource? _warmupCts;
         private IJSObjectReference? _jsModule;
-        private bool _subscribed;
         private bool _notificationsSubscribed;
         private bool _rechargementCultureEnCours;
         private bool _initialisationTerminee;
@@ -181,31 +174,6 @@ namespace MyDemonList.Web.Components.Layout
                 }
             }
 
-            if (ulong.TryParse(_discordId, out _listenId))
-            {
-                if (!_subscribed)
-                {
-                    Presence.StatusChanged += OnPresenceChanged;
-                    _subscribed = true;
-                }
-
-                if (Presence.TryGetCachedStatus(_listenId, out string cached))
-                    ApplyStatus(cached);
-
-                _warmupCts = new CancellationTokenSource();
-                _ = Task.Run(async () =>
-                {
-                    DateTime end = DateTime.UtcNow.AddSeconds(20);
-                    while (DateTime.UtcNow < end && !_warmupCts.IsCancellationRequested)
-                    {
-                        string s = await Presence.GetStatusAsync(_listenId, _warmupCts.Token);
-                        await InvokeAsync(() => { ApplyStatus(s); StateHasChanged(); });
-                        if (s != "offline") break;
-                        await Task.Delay(2000, _warmupCts.Token);
-                    }
-                }, _warmupCts.Token);
-            }
-
             _initialisationTerminee = true;
             if (!_componentDetruit && _urlRechargementCulture is not null)
                 RechargerPourCulture(_urlRechargementCulture);
@@ -234,27 +202,6 @@ namespace MyDemonList.Web.Components.Layout
             catch (JSDisconnectedException)
             {
             }
-        }
-
-        private void OnPresenceChanged(ulong userId, string s)
-        {
-            if (userId != _listenId) return;
-            _ = InvokeAsync(() =>
-            {
-                ApplyStatus(s);
-                StateHasChanged();
-            });
-        }
-
-        private void ApplyStatus(string s)
-        {
-            _statusClass = s switch
-            {
-                "online" => "etat--online",
-                "idle" => "etat--idle",
-                "dnd" => "etat--dnd",
-                _ => "etat--offline"
-            };
         }
 
         private async void OnListeSessionChanged()
@@ -457,15 +404,12 @@ namespace MyDemonList.Web.Components.Layout
             _componentDetruit = true;
             NavigationManager.LocationChanged -= HandleLocationChanged;
             ProfilSignal.DrapeauModifie -= OnDrapeauModifie;
-            if (_subscribed) Presence.StatusChanged -= OnPresenceChanged;
             if (_notificationsSubscribed)
             {
                 NotificationSignal.NotificationsModifiees -= OnNotificationsModifiees;
                 NotificationSignal.NotificationsGlobalesModifiees -= OnNotificationsGlobalesModifiees;
             }
             ListeSession.OnChanged -= OnListeSessionChanged;
-            _warmupCts?.Cancel();
-            _warmupCts?.Dispose();
 
             if (_jsModule is not null)
             {
