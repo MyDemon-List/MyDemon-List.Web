@@ -363,6 +363,14 @@
     box-sizing: border-box;
 }
 
+.carte-formulaire--creation {
+    width: 100%;
+    gap: 20px;
+    padding: 24px 26px;
+    background: var(--surface-panel);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
 .formulaire-entete h2 {
     margin: 0;
     color: #f2f2f4;
@@ -378,8 +386,8 @@
 
 .formulaire-champs {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-    gap: 14px;
+    grid-template-columns: minmax(220px, 0.85fr) minmax(300px, 1.15fr);
+    gap: 20px;
 }
 
 .champ {
@@ -424,8 +432,18 @@
 }
 
 .textarea {
+    height: 42px;
     min-height: 42px;
     resize: vertical;
+}
+
+.pied-formulaire {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .option-publique {
@@ -498,7 +516,6 @@
 .actions-formulaire {
     display: flex;
     justify-content: flex-end;
-    padding-top: 2px;
 }
 
 .btn {
@@ -534,6 +551,17 @@
     font-size: 1.12rem;
     font-weight: 500;
     line-height: 1;
+}
+
+.btn-fermer {
+    border-color: var(--border-default);
+    background: var(--surface-control);
+    color: var(--text-secondary-strong);
+}
+
+.btn-fermer:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
 }
 
 .alert {
@@ -622,5 +650,15 @@
 
     .carte-formulaire {
         padding: 18px;
+    }
+
+    .pied-formulaire {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .actions-formulaire .btn {
+        width: 100%;
     }
 }
