@@ -17,9 +17,9 @@ namespace MyDemonList.Web.Utils
             bool singulier = valeur == 1;
             string unite = langue switch
             {
-                "en" => singulier ? enSingulier : enPluriel,
+                "fr" => singulier ? frSingulier : frPluriel,
                 "es" => singulier ? esSingulier : esPluriel,
-                _ => singulier ? frSingulier : frPluriel
+                _ => singulier ? enSingulier : enPluriel
             };
             return $"{valeur:0} {unite}";
         }
