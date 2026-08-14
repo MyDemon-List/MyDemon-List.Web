@@ -6,6 +6,7 @@ using MyDemonList.Web.Entities.Context;
 using MyDemonList.Web.Services;
 using MyDemonList.Web.Utils;
 using Npgsql;
+using System.Text.RegularExpressions;
 
 namespace MyDemonList.Web.Components.Pages
 {
@@ -28,6 +29,8 @@ namespace MyDemonList.Web.Components.Pages
         private List<UtilisateurSuggestion> _formVerifieurSuggestions = [];
 
         private string _formCreateurInput = string.Empty;
+        private string _formCreateursEnMasse = string.Empty;
+        private bool _afficherAjoutCreateursEnMasse;
         private List<UtilisateurSuggestion> _formCreateurSuggestions = [];
         private List<string> _formCreateurs = [];
 
@@ -201,6 +204,31 @@ namespace MyDemonList.Web.Components.Pages
 
             _formCreateurInput = string.Empty;
             _formCreateurSuggestions = [];
+        }
+
+        private void BasculerAjoutCreateursEnMasse()
+        {
+            _afficherAjoutCreateursEnMasse = !_afficherAjoutCreateursEnMasse;
+        }
+
+        private void AjouterCreateursEnMasse()
+        {
+            string[] noms = Regex.Split(
+                _formCreateursEnMasse.Trim(),
+                @"\r?\n+")
+                .Select(nom => nom.Trim())
+                .Where(nom => !string.IsNullOrWhiteSpace(nom))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            foreach (string nom in noms)
+            {
+                if (!_formCreateurs.Any(createur => createur.Equals(nom, StringComparison.OrdinalIgnoreCase)))
+                    _formCreateurs.Add(nom);
+            }
+
+            _formCreateursEnMasse = string.Empty;
+            _afficherAjoutCreateursEnMasse = false;
         }
 
         private void RetirerCreateur(string nom) => _formCreateurs.Remove(nom);
@@ -382,6 +410,8 @@ namespace MyDemonList.Web.Components.Pages
             _formVerifieurSuggestions = [];
             _formCreateurs = [.. ligne.NomsCreateurs];
             _formCreateurInput = string.Empty;
+            _formCreateursEnMasse = string.Empty;
+            _afficherAjoutCreateursEnMasse = false;
             _formCreateurSuggestions = [];
             _formPosition = ligne.Classement.ClassementPosition;
             _formIdDuNiveauErreur = null;
@@ -430,6 +460,8 @@ namespace MyDemonList.Web.Components.Pages
             _formPublisherSuggestions = [];
             _formVerifieurSuggestions = [];
             _formCreateurInput = string.Empty;
+            _formCreateursEnMasse = string.Empty;
+            _afficherAjoutCreateursEnMasse = false;
             _formCreateurSuggestions = [];
             _formCreateurs = [];
             _formPosition = _classements.Count + 1;
@@ -515,6 +547,9 @@ namespace MyDemonList.Web.Components.Pages
 
             if (!string.IsNullOrWhiteSpace(_formCreateurInput))
                 AjouterCreateur();
+
+            if (!string.IsNullOrWhiteSpace(_formCreateursEnMasse))
+                AjouterCreateursEnMasse();
 
             if (_formCreateurs.Count == 0)
             {
