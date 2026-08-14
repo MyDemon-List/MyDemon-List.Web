@@ -47,6 +47,11 @@ namespace MyDemonList.Web.Components.Pages
         private bool _idNiveauCopie;
         private CancellationTokenSource? _idNiveauCopieCts;
         private IJSObjectReference? _jsModule;
+        private ElementReference _articleElement;
+        private bool _vueMobileDetail;
+        private string? _dernierParametreNiveauMobile;
+        private bool _vueMobileInitialisee;
+        private bool _remonterVueMobileApresRendu;
 
         private List<Utilisateur> _listeEntiereUtilisateurs = [];
         private List<Niveau> _listeEntiereNiveaux = [];
@@ -178,6 +183,8 @@ namespace MyDemonList.Web.Components.Pages
 
         protected override void OnParametersSet()
         {
+            SynchroniserVueMobile();
+
             if (_listeId == 0 || _listeEntiereNiveaux.Count == 0) return;
 
             if (!string.IsNullOrWhiteSpace(NiveauSelectionne))
@@ -192,6 +199,32 @@ namespace MyDemonList.Web.Components.Pages
             }
 
             SelectionnerNiveauParDefaut();
+        }
+
+        private void SynchroniserVueMobile()
+        {
+            if (!_vueMobileInitialisee)
+            {
+                _vueMobileDetail = !string.IsNullOrWhiteSpace(NiveauSelectionne);
+                _dernierParametreNiveauMobile = NiveauSelectionne;
+                _vueMobileInitialisee = true;
+                return;
+            }
+
+            if (string.Equals(_dernierParametreNiveauMobile, NiveauSelectionne, StringComparison.Ordinal)) return;
+
+            _dernierParametreNiveauMobile = NiveauSelectionne;
+            _vueMobileDetail = !string.IsNullOrWhiteSpace(NiveauSelectionne);
+            _remonterVueMobileApresRendu = true;
+        }
+
+        private void ChangerVueMobile(bool afficherDetail)
+        {
+            if (afficherDetail && _niveauSelectionne is null) return;
+            if (_vueMobileDetail == afficherDetail) return;
+
+            _vueMobileDetail = afficherDetail;
+            _remonterVueMobileApresRendu = true;
         }
 
         private async Task<bool> PeutConsulterListeAsync(MyDemonListWebDbContext dbContext, Liste liste)
@@ -286,6 +319,25 @@ namespace MyDemonList.Web.Components.Pages
 
             _dernierNiveauId = _niveauSelectionne.Id;
             StateHasChanged();
+        }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (!_remonterVueMobileApresRendu) return;
+
+            _remonterVueMobileApresRendu = false;
+
+            try
+            {
+                IJSObjectReference module = await ObtenirModuleJsAsync();
+                await module.InvokeVoidAsync("remonterConteneur", _articleElement);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
         }
 
         public async ValueTask DisposeAsync()

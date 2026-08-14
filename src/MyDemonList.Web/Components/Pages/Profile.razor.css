@@ -1,6 +1,6 @@
 .profil-page {
     width: 100%;
-    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
     padding: 28px 16px 56px;
     box-sizing: border-box;
     overflow-y: auto;
@@ -606,7 +606,7 @@ select.input {
 .profil-loading {
     display: grid;
     width: 100%;
-    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
     place-items: center;
     color: #aeb0b9;
 }
@@ -662,9 +662,84 @@ select.input {
     }
 }
 
+@media (max-width: 430px) {
+    .profil-page {
+        padding-inline: 6px;
+    }
+
+    .profil-entete {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 15px;
+    }
+
+    .avatar {
+        width: 62px;
+        height: 62px;
+    }
+
+    .profil-identite,
+    .profil-nom-ligne {
+        width: 100%;
+    }
+
+    .profil-identite h1 {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .discord-infos {
+        flex-direction: column;
+    }
+
+    .profil-section,
+    .profil-sauvegarde {
+        padding: 15px;
+    }
+
+    .options-langues {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .actions,
+    .fusion-form {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .actions .btn,
+    .fusion-form .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .input,
     .btn {
         transition: none;
+    }
+}
+
+.profil-page,
+.profil-card {
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+}
+
+@media (max-width: 620px) {
+    .input,
+    input,
+    select,
+    textarea {
+        min-width: 0;
+        font-size: 16px;
+    }
+
+    .btn,
+    .option-langue,
+    .selecteur-drapeau-declencheur {
+        min-height: 44px;
     }
 }

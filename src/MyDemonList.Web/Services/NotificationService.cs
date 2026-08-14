@@ -6,14 +6,14 @@ namespace MyDemonList.Web.Services
 {
     public sealed class NotificationService
     {
-        private readonly DbContextOptions<MyDemonListWebDbContext> _dbContextOptions;
+        private readonly IDbContextFactory<MyDemonListWebDbContext> _dbContextFactory;
         private readonly NotificationSignalService _signal;
 
         public NotificationService(
-            DbContextOptions<MyDemonListWebDbContext> dbContextOptions,
+            IDbContextFactory<MyDemonListWebDbContext> dbContextFactory,
             NotificationSignalService signal)
         {
-            _dbContextOptions = dbContextOptions;
+            _dbContextFactory = dbContextFactory;
             _signal = signal;
         }
 
@@ -46,7 +46,7 @@ namespace MyDemonList.Web.Services
             string? lien = null,
             string type = TypesNotification.Information)
         {
-            using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(_dbContextOptions);
+            await using MyDemonListWebDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
             Ajouter(dbContext, utilisateurId, type, titre, message, lien);
             await dbContext.SaveChangesAsync();
             Signaler(utilisateurId);
@@ -54,7 +54,7 @@ namespace MyDemonList.Web.Services
 
         public async Task<int> EnvoyerATousAsync(string titre, string message, string? lien = null)
         {
-            using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(_dbContextOptions);
+            await using MyDemonListWebDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
             List<int> utilisateurIds = await dbContext.DiscordAccounts
                 .AsNoTracking()
                 .Select(d => d.UtilisateurId)
@@ -73,7 +73,7 @@ namespace MyDemonList.Web.Services
 
         public async Task<List<Notification>> ObtenirAsync(int utilisateurId)
         {
-            using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(_dbContextOptions);
+            await using MyDemonListWebDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
             return await dbContext.Notifications
                 .AsNoTracking()
                 .Where(n => n.UtilisateurId == utilisateurId)
@@ -83,7 +83,7 @@ namespace MyDemonList.Web.Services
 
         public async Task<int> CompterNonLuesAsync(int utilisateurId)
         {
-            using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(_dbContextOptions);
+            await using MyDemonListWebDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
             return await dbContext.Notifications
                 .AsNoTracking()
                 .CountAsync(n => n.UtilisateurId == utilisateurId && n.DateLecture == null);
@@ -91,7 +91,7 @@ namespace MyDemonList.Web.Services
 
         public async Task<bool> MarquerCommeLueAsync(int utilisateurId, int notificationId)
         {
-            using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(_dbContextOptions);
+            await using MyDemonListWebDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
             int nombre = await dbContext.Notifications
                 .Where(n => n.Id == notificationId && n.UtilisateurId == utilisateurId && n.DateLecture == null)
                 .ExecuteUpdateAsync(s => s.SetProperty(n => n.DateLecture, DateTime.Now));
@@ -104,7 +104,7 @@ namespace MyDemonList.Web.Services
 
         public async Task<int> MarquerToutesCommeLuesAsync(int utilisateurId)
         {
-            using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(_dbContextOptions);
+            await using MyDemonListWebDbContext dbContext = await _dbContextFactory.CreateDbContextAsync();
             int nombre = await dbContext.Notifications
                 .Where(n => n.UtilisateurId == utilisateurId && n.DateLecture == null)
                 .ExecuteUpdateAsync(s => s.SetProperty(n => n.DateLecture, DateTime.Now));

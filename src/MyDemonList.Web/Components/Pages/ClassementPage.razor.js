@@ -1,7 +1,3 @@
-export function copierTexte(texte) {
-    return navigator.clipboard.writeText(texte);
-}
-
 export function remonterConteneur(element) {
     element?.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }

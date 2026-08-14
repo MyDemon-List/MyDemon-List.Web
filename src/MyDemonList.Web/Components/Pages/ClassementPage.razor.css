@@ -871,7 +871,7 @@ button:focus-visible {
 }
 
 .article {
-    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
     min-height: 0;
     overflow: hidden;
 }
@@ -936,6 +936,57 @@ button:focus-visible {
         padding: 20px 14px 40px;
     }
 
+    .barre-outil {
+        padding-left: 8px;
+    }
+
+    .recherche-joueur {
+        min-width: 0;
+        font-size: 16px;
+    }
+
+    .bouton-tri {
+        min-height: 44px;
+        padding-inline: 1rem;
+    }
+
+    .modal-panel {
+        align-items: flex-end;
+        padding: 8px;
+    }
+
+    .modal-card,
+    .modal-card.is-large {
+        width: 100%;
+        max-height: calc(100dvh - 16px);
+        overflow-y: auto;
+        border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-sm);
+    }
+
+    .modal-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 15px 16px;
+        background: #1f2023;
+    }
+
+    .modal-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .modal-grid {
+        padding: 14px;
+    }
+
+    .sort-tabs {
+        overflow-x: auto;
+    }
+
+    .sort-tabs button {
+        min-width: max-content;
+    }
+
     .profil-joueur,
     .section-niveaux {
         border-radius: var(--radius-lg);
@@ -966,6 +1017,16 @@ button:focus-visible {
         font-size: 1.1rem;
     }
 
+    .liste-utilisateur {
+        max-height: 44dvh;
+    }
+
+    .utilisateur-groupe {
+        min-height: 44px;
+        box-sizing: border-box;
+        font-size: 1rem;
+    }
+
     .carte-niveau {
         padding-right: 11px;
     }
@@ -983,9 +1044,188 @@ button:focus-visible {
     }
 }
 
+@media (max-width: 380px) {
+    .barre-outil {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .bouton-tri {
+        justify-content: center;
+    }
+
+    .profil-identite {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .stats-joueur {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     * {
         animation: none !important;
         transition: none !important;
+    }
+}
+
+/* Responsive structurel : aucun élément ne peut agrandir la page. */
+.article {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+}
+
+.liste-utilisateur {
+    min-width: 0;
+}
+
+@media (max-width: 700px) {
+    .article {
+        gap: 10px;
+        padding: 8px;
+        overflow-x: clip;
+        scroll-behavior: smooth;
+    }
+
+    .liste-utilisateur {
+        height: auto;
+        max-height: none;
+        padding: 0 0 20px;
+        overflow: visible;
+    }
+
+    .article.avec-selection .detail-utilisateur {
+        order: 1;
+    }
+
+    .article.avec-selection .liste-utilisateur {
+        order: 2;
+    }
+
+    .article.sans-selection .detail-utilisateur {
+        display: none;
+    }
+
+    .barre-outil {
+        top: -1px;
+        padding: 8px;
+        background: rgba(35, 37, 43, .94);
+        border: 1px solid var(--white-06);
+        border-radius: var(--radius-lg);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+    }
+
+    .sort-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        overflow: visible;
+    }
+
+    .sort-tabs button {
+        min-width: 0;
+        padding-inline: 8px;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 520px) {
+    .utilisateur-groupe {
+        font-size: .92rem;
+    }
+
+    .utilisateur-groupe-index {
+        width: 34px;
+        margin-inline: 0;
+    }
+
+    .utilisateur-groupe-nombre {
+        max-width: 38%;
+        overflow: hidden;
+        font-size: .72rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 380px) {
+    .article {
+        gap: 7px;
+        padding: 6px;
+    }
+}
+
+/* Navigation mobile : le classement et le profil deviennent deux vues distinctes. */
+.bascule-vue-mobile {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .bascule-vue-mobile {
+        position: sticky;
+        top: 0;
+        z-index: 70;
+        order: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+        width: 100%;
+        flex: 0 0 auto;
+        box-sizing: border-box;
+        padding: 4px;
+        border: 1px solid var(--white-10);
+        border-radius: var(--radius-lg);
+        background: rgba(29, 30, 35, .97);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, .3);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+    }
+
+    .bascule-vue-mobile button {
+        min-width: 0;
+        min-height: 42px;
+        padding: 8px 12px;
+        border: 0;
+        border-radius: calc(var(--radius-lg) - 4px);
+        background: transparent;
+        color: #b9bac0;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+    }
+
+    .bascule-vue-mobile button.active {
+        background: var(--accent-gradient);
+        color: var(--white);
+        box-shadow: 0 5px 14px rgba(112, 0, 160, .32);
+    }
+
+    .bascule-vue-mobile button:disabled {
+        cursor: not-allowed;
+        opacity: .4;
+    }
+
+    .article.vue-mobile-liste .liste-utilisateur {
+        display: block;
+        order: 1;
+    }
+
+    .article.vue-mobile-liste .detail-utilisateur {
+        display: none;
+    }
+
+    .article.vue-mobile-detail .liste-utilisateur {
+        display: none;
+    }
+
+    .article.vue-mobile-detail .detail-utilisateur {
+        display: block;
+        order: 1;
     }
 }
