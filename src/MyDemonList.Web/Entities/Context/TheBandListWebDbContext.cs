@@ -23,6 +23,7 @@ namespace MyDemonList.Web.Entities.Context
         public DbSet<DemandeNiveauxSupplementaires> DemandesNiveauxSupplementaires { get; set; }
         public DbSet<DemandeListesSupplementaires> DemandesListesSupplementaires { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<HistoriqueListe> HistoriquesListes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -72,10 +73,39 @@ namespace MyDemonList.Web.Entities.Context
 
             modelBuilder.Entity<Liste>(e =>
             {
+                e.HasQueryFilter(x => !x.EstSupprimee);
+
                 e.HasOne(x => x.Utilisateur)
                  .WithMany()
                  .HasForeignKey(x => x.UtilisateurId)
                  .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<HistoriqueListe>(e =>
+            {
+                e.Property(x => x.TypeAction).HasMaxLength(50).IsRequired();
+                e.Property(x => x.Description).HasMaxLength(500).IsRequired();
+                e.Property(x => x.CleCible).HasMaxLength(100);
+                e.Property(x => x.DonneesAvant).HasColumnType("jsonb");
+                e.Property(x => x.DonneesApres).HasColumnType("jsonb");
+                e.Property(x => x.DateCreation).HasDefaultValueSql("now()");
+                e.HasIndex(x => new { x.ListeId, x.DateCreation });
+                e.HasIndex(x => new { x.ListeId, x.CleCible, x.Id });
+
+                e.HasOne(x => x.Liste)
+                 .WithMany()
+                 .HasForeignKey(x => x.ListeId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(x => x.Utilisateur)
+                 .WithMany()
+                 .HasForeignKey(x => x.UtilisateurId)
+                 .OnDelete(DeleteBehavior.SetNull);
+
+                e.HasOne(x => x.AnnuleeParUtilisateur)
+                 .WithMany()
+                 .HasForeignKey(x => x.AnnuleeParUtilisateurId)
+                 .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<CreateurNiveau>(e =>

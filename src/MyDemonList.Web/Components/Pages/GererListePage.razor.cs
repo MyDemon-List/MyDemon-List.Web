@@ -57,6 +57,9 @@ namespace MyDemonList.Web.Components.Pages
         private NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
+        private HistoriqueListeService HistoriqueService { get; set; } = default!;
+
+        [Inject]
         private IJSRuntime JsRuntime { get; set; } = default!;
 
         [Inject]
@@ -69,7 +72,7 @@ namespace MyDemonList.Web.Components.Pages
             ? SeoUtils.CheminGestion(_listeId, _listeNom.Length > 0 ? _listeNom : ListeSession.ListeNom ?? "demon-list")
             : "/liste/gerer";
 
-        private enum Onglet { Niveaux, Formulaire, Soumissions, Parametres, Moderation }
+        private enum Onglet { Niveaux, Formulaire, Soumissions, Parametres, Moderation, Historique }
 
         private enum RoleEffectif { Proprietaire, Administrateur, EditeurNiveaux, Moderateur }
 
@@ -87,6 +90,9 @@ namespace MyDemonList.Web.Components.Pages
         private bool PeutVoirOngletParametres => _roleEffectif == RoleEffectif.Proprietaire;
         private bool PeutGererParametres => _roleEffectif == RoleEffectif.Proprietaire;
         private bool PeutVoirOngletModeration => _roleEffectif is RoleEffectif.Proprietaire or RoleEffectif.Administrateur;
+        private bool PeutVoirOngletHistorique => _roleEffectif is not null;
+        private bool PeutAnnulerHistorique => _roleEffectif is not null;
+        private bool PeutSupprimerOuRestaurerListe => _roleEffectif == RoleEffectif.Proprietaire;
 
         private bool PeutAssignerRole(RoleListe role) => _roleEffectif switch
         {
@@ -106,6 +112,7 @@ namespace MyDemonList.Web.Components.Pages
         private int _listeId;
         private int _utilisateurId;
         private bool _listeProprietaireEstAdminSite;
+        private bool _listeEstSupprimee;
 
         private int _paliersNiveauxApprouves;
         private DemandeNiveauxSupplementaires? _derniereDemandeNiveaux;
@@ -210,7 +217,10 @@ namespace MyDemonList.Web.Components.Pages
 
                 _utilisateurId = compte.Utilisateur.Id;
 
-                Liste? liste = await dbContext.Listes.AsNoTracking().FirstOrDefaultAsync(l => l.Id == _listeId);
+                Liste? liste = await dbContext.Listes
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(l => l.Id == _listeId);
                 if (liste is null)
                 {
                     NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/liste", Texte.CodeLangue));
@@ -218,6 +228,7 @@ namespace MyDemonList.Web.Components.Pages
                 }
 
                 _proprietaireUtilisateurId = liste.UtilisateurId;
+                _listeEstSupprimee = liste.EstSupprimee;
                 _listeProprietaireEstAdminSite = await SiteAdminService.EstAdminOuChefDuSiteAsync(liste.UtilisateurId);
 
                 if (liste.UtilisateurId == _utilisateurId)
@@ -245,6 +256,12 @@ namespace MyDemonList.Web.Components.Pages
                     return;
                 }
 
+                if (_listeEstSupprimee && _roleEffectif != RoleEffectif.Proprietaire)
+                {
+                    NavigationManager.NavigateTo(SeoUtils.LocaliserChemin("/", Texte.CodeLangue));
+                    return;
+                }
+
                 _estAutorise = true;
                 ListeSession.SetListe(liste.Id, liste.Nom, liste.DiscordServerUrl);
                 _listeNom = liste.Nom;
@@ -261,7 +278,9 @@ namespace MyDemonList.Web.Components.Pages
             await ChargerDonnees();
             ReinitialiserFormulaire();
 
-            _ongletActuel = PeutVoirOngletNiveaux ? Onglet.Niveaux : Onglet.Soumissions;
+            _ongletActuel = _listeEstSupprimee
+                ? Onglet.Historique
+                : PeutVoirOngletNiveaux ? Onglet.Niveaux : Onglet.Soumissions;
 
             Uri uri = new Uri(NavigationManager.Uri);
             if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("onglet", out StringValues onglet))
@@ -272,6 +291,7 @@ namespace MyDemonList.Web.Components.Pages
                     "soumissions" => Onglet.Soumissions,
                     "niveaux" when PeutVoirOngletNiveaux => Onglet.Niveaux,
                     "moderation" when PeutVoirOngletModeration => Onglet.Moderation,
+                    "historique" when PeutVoirOngletHistorique => Onglet.Historique,
                     _ => _ongletActuel
                 };
             }
@@ -329,7 +349,10 @@ namespace MyDemonList.Web.Components.Pages
             _derniereDemandeNiveaux = await QuotaService.DerniereDemandeNiveauxAsync(_listeId);
             _demandeNiveauxEnCours = _derniereDemandeNiveaux?.Statut == "EnAttente";
 
-            Liste? liste = await dbContext.Listes.AsNoTracking().FirstOrDefaultAsync(l => l.Id == _listeId);
+            Liste? liste = await dbContext.Listes
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(l => l.Id == _listeId);
             if (liste != null)
             {
                 _listeNom = liste.Nom;
@@ -338,8 +361,12 @@ namespace MyDemonList.Web.Components.Pages
                 _listeDiscordServerUrl = liste.DiscordServerUrl ?? string.Empty;
                 _rawFootageMode = liste.RawFootageMode;
                 _rawFootageTopStart = liste.RawFootageTopStart;
+                _listeEstSupprimee = liste.EstSupprimee;
                 _listeAUneImageDeFond = NiveauService.HasBackgroundListe(_listeId);
             }
+
+            if (PeutVoirOngletHistorique)
+                await ChargerHistorique();
         }
 
         private List<LigneNiveau> ObtenirLignes() =>
@@ -460,12 +487,42 @@ namespace MyDemonList.Web.Components.Pages
                     return;
                 }
 
+                ParametresListeHistorique avant = HistoriqueListeService.CapturerParametres(liste);
+
                 liste.Nom = nom;
                 liste.Description = string.IsNullOrWhiteSpace(_listeDescription) ? null : _listeDescription.Trim();
                 liste.EstPublique = _listeEstPublique;
                 liste.DiscordServerUrl = string.IsNullOrWhiteSpace(_listeDiscordServerUrl) ? null : _listeDiscordServerUrl.Trim();
                 liste.RawFootageMode = _rawFootageMode;
                 liste.RawFootageTopStart = _rawFootageTopStart;
+
+                ParametresListeHistorique apres = HistoriqueListeService.CapturerParametres(liste);
+                if (avant != apres)
+                {
+                    HistoriqueListeService.Ajouter(
+                        dbContext,
+                        _listeId,
+                        _utilisateurId,
+                        TypesActionHistoriqueListe.ListeModifiee,
+                        "Les paramètres de la liste ont été modifiés.",
+                        HistoriqueListeService.CleParametres(_listeId),
+                        avant,
+                        apres);
+                }
+
+                if (_backgroundImageBytes != null)
+                {
+                    HistoriqueListeService.Ajouter(
+                        dbContext,
+                        _listeId,
+                        _utilisateurId,
+                        TypesActionHistoriqueListe.ListeModifiee,
+                        "L'image de fond de la liste a été modifiée.",
+                        HistoriqueListeService.CleBackground(_listeId),
+                        null,
+                        null,
+                        false);
+                }
 
                 if (_backgroundImageBytes != null)
                 {
@@ -538,6 +595,21 @@ namespace MyDemonList.Web.Components.Pages
                 return;
 
             await QuotaService.DemanderNiveauxSupplementairesAsync(_listeId, _utilisateurId);
+
+            using (MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(DbContextOptions))
+            {
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeId,
+                    _utilisateurId,
+                    TypesActionHistoriqueListe.DemandeQuotaNiveaux,
+                    $"Une demande d'augmentation à {ProchaineLimiteNiveaux} niveaux a été envoyée.",
+                    null,
+                    null,
+                    null,
+                    false);
+                await dbContext.SaveChangesAsync();
+            }
 
             _paliersNiveauxApprouves = await QuotaService.CompterApprobationsNiveauxAsync(_listeId);
             _derniereDemandeNiveaux = await QuotaService.DerniereDemandeNiveauxAsync(_listeId);
