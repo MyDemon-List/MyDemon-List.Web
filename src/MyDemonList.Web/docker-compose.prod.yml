@@ -8,11 +8,7 @@ services:
       - POSTGRES_DB=${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./Sql/01-Create.sql:/docker-entrypoint-initdb.d/01-Create.sql
-      - ./Sql/02-Seed.sql:/docker-entrypoint-initdb.d/02-Seed.sql
-      - ./Sql/04-Notifications.sql:/docker-entrypoint-initdb.d/04-Notifications.sql
-      - ./Sql/05-DrapeauxUtilisateurs.sql:/docker-entrypoint-initdb.d/05-DrapeauxUtilisateurs.sql
-      - ./Sql/06-LanguesUtilisateurs.sql:/docker-entrypoint-initdb.d/06-LanguesUtilisateurs.sql
+      - ./Sql/01-Init.sql:/docker-entrypoint-initdb.d/01-Init.sql:ro
     networks:
       - backend
     restart: unless-stopped
