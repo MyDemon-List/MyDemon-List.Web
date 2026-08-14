@@ -7,12 +7,21 @@
             <img src="@Assets["Pictures/LogoMyDemonList-96.png"]" alt="My Demon List" width="52" height="52" fetchpriority="high" />
         </a>
 
-        <nav id="nav-root" data-indicator-key="@GetIndicatorKey()" aria-label="@Texte["NavigationPrincipale", "Navigation principale"]" @onmouseleave="HandleNavMouseLeave">
-            <a href="@SeoUtils.LocaliserChemin("/", Texte.CodeLangue)" data-nav-key="/" class="nav-item" @onmouseover="@(() => SetHoveredItem("/"))">@Texte["Accueil", "Accueil"]</a>
-            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminListe(), Texte.CodeLangue)" data-nav-key="/liste" class="nav-item nav-item--conditionnel nav-item--liste @(ListeSession.ListeId is not null ? "visible" : "")" @onmouseover="@(() => SetHoveredItem("/liste"))">@Texte["Liste", "Liste"]</a>
-            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminGestion(), Texte.CodeLangue)" data-nav-key="/liste/gerer" class="nav-item nav-item--gerer @(_peutGererListe ? "visible" : "")" @onmouseover="@(() => SetHoveredItem("/liste/gerer"))">@Texte["GererListe", "Gérer la liste"]</a>
-            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminClassement(), Texte.CodeLangue)" data-nav-key="/classement" class="nav-item nav-item--conditionnel nav-item--classement @(ListeSession.ListeId is not null ? "visible" : "")" @onmouseover="@(() => SetHoveredItem("/classement"))">@Texte["Classement", "Classement"]</a>
-            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminSoumission(), Texte.CodeLangue)" data-nav-key="/soumettre-une-reussite" class="nav-item nav-item--conditionnel nav-item--soumettre @(ListeSession.ListeId is not null ? "visible" : "")" @onmouseover="@(() => SetHoveredItem("/soumettre-une-reussite"))">@Texte["SoumettreReussite", "Soumettre une réussite"]</a>
+        <button type="button"
+                class="bouton-menu-mobile @(_navigationMobileOuverte ? "actif" : null)"
+                aria-label="@Texte["NavigationPrincipale", "Navigation principale"]"
+                aria-expanded="@_navigationMobileOuverte"
+                aria-controls="nav-root"
+                @onclick="BasculerNavigationMobile">
+            <span></span><span></span><span></span>
+        </button>
+
+        <nav id="nav-root" class="@(_navigationMobileOuverte ? "nav-mobile-ouvert" : null)" data-indicator-key="@GetIndicatorKey()" aria-label="@Texte["NavigationPrincipale", "Navigation principale"]" @onmouseleave="HandleNavMouseLeave">
+            <a href="@SeoUtils.LocaliserChemin("/", Texte.CodeLangue)" data-nav-key="/" class="nav-item" aria-current="@ObtenirAriaCurrent("/")" @onclick="FermerNavigationMobile" @onmouseover="@(() => SetHoveredItem("/"))">@Texte["Accueil", "Accueil"]</a>
+            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminListe(), Texte.CodeLangue)" data-nav-key="/liste" class="nav-item nav-item--conditionnel nav-item--liste @(ListeSession.ListeId is not null ? "visible" : "")" aria-current="@ObtenirAriaCurrent("/liste")" @onclick="FermerNavigationMobile" @onmouseover="@(() => SetHoveredItem("/liste"))">@Texte["Liste", "Liste"]</a>
+            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminGestion(), Texte.CodeLangue)" data-nav-key="/liste/gerer" class="nav-item nav-item--gerer @(_peutGererListe ? "visible" : "")" aria-current="@ObtenirAriaCurrent("/liste/gerer")" @onclick="FermerNavigationMobile" @onmouseover="@(() => SetHoveredItem("/liste/gerer"))">@Texte["GererListe", "Gérer la liste"]</a>
+            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminClassement(), Texte.CodeLangue)" data-nav-key="/classement" class="nav-item nav-item--conditionnel nav-item--classement @(ListeSession.ListeId is not null ? "visible" : "")" aria-current="@ObtenirAriaCurrent("/classement")" @onclick="FermerNavigationMobile" @onmouseover="@(() => SetHoveredItem("/classement"))">@Texte["Classement", "Classement"]</a>
+            <a href="@SeoUtils.LocaliserChemin(ObtenirCheminSoumission(), Texte.CodeLangue)" data-nav-key="/soumettre-une-reussite" class="nav-item nav-item--conditionnel nav-item--soumettre @(ListeSession.ListeId is not null ? "visible" : "")" aria-current="@ObtenirAriaCurrent("/soumettre-une-reussite")" @onclick="FermerNavigationMobile" @onmouseover="@(() => SetHoveredItem("/soumettre-une-reussite"))">@Texte["SoumettreReussite", "Soumettre une réussite"]</a>
 
             <div class="@GetIndicatorClass()" id="nav-indicator"></div>
 
@@ -24,6 +33,11 @@
                 <span class="nav-item nav-mirror-item nav-item--conditionnel nav-item--soumettre @(ListeSession.ListeId is not null ? "visible" : "")">@Texte["SoumettreReussite", "Soumettre une réussite"]</span>
             </div>
         </nav>
+
+        @if (_navigationMobileOuverte)
+        {
+            <button type="button" class="overlay-navigation-mobile" aria-label="@Texte["Fermer", "Fermer"]" @onclick="FermerNavigationMobile"></button>
+        }
 
         <AuthorizeView>
             <Authorized>

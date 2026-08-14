@@ -40,7 +40,7 @@ string connectionString = builder.Environment.IsDevelopment()
     ? "Host=localhost;Port=21555;Username=postgres;Password=password;Database=database;Include Error Detail=true"
     : $"Host={dbHost};Port={dbPort};Username={dbUser};Password={dbPass};Database={dbName}";
 
-builder.Services.AddDbContext<MyDemonListWebDbContext>(o => o.UseNpgsql(connectionString));
+builder.Services.AddDbContextFactory<MyDemonListWebDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<NiveauService>();
 builder.Services.AddScoped<FusionService>();

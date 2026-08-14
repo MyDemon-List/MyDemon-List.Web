@@ -22,7 +22,7 @@
 
 <h1 class="visually-hidden">@(_listeCourante is null ? "Demon list Geometry Dash" : _listeCourante.Nom)</h1>
 
-<div class="article">
+<div @ref="_articleElement" class="article @(_niveauSelectionne is null ? "sans-selection" : string.IsNullOrWhiteSpace(NiveauSelectionne) ? "selection-par-defaut" : "avec-selection") @(_vueMobileDetail ? "vue-mobile-detail" : "vue-mobile-liste")">
     @if (_niveauSelectionne is not null)
     {
         <div class="fond-page-pile">
@@ -34,6 +34,24 @@
         </div>
         <div class="voile-page"></div>
     }
+
+    <div class="bascule-vue-mobile" role="tablist" aria-label="@Texte["ChangerVue", "Changer de vue"]">
+        <button type="button"
+                role="tab"
+                aria-selected="@(!_vueMobileDetail)"
+                class="@(!_vueMobileDetail ? "active" : null)"
+                @onclick="() => ChangerVueMobile(false)">
+            @Texte["Liste", "Liste"]
+        </button>
+        <button type="button"
+                role="tab"
+                aria-selected="@_vueMobileDetail"
+                class="@(_vueMobileDetail ? "active" : null)"
+                disabled="@(_niveauSelectionne is null)"
+                @onclick="() => ChangerVueMobile(true)">
+            @Texte["Details", "Détails"]
+        </button>
+    </div>
 
     <div class="liste-niveaux">
         <div class="filtrage-container sticky-filter">

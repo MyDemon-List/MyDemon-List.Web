@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.JSInterop;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
 using MyDemonList.Web.Services;
@@ -8,7 +9,7 @@ using MyDemonList.Web.Utils;
 
 namespace MyDemonList.Web.Components.Pages
 {
-    public partial class ClassementPage
+    public partial class ClassementPage : IAsyncDisposable
     {
         [Parameter]
         public int? ListeId { get; set; }
@@ -42,6 +43,9 @@ namespace MyDemonList.Web.Components.Pages
 
         [Inject]
         private AuthenticationStateProvider AuthProvider { get; set; } = default!;
+
+        [Inject]
+        private IJSRuntime JsRuntime { get; set; } = default!;
 
         private string ObtenirTitrePage() =>
             (_listeCourante?.Nom ?? ListeSession.ListeNom) is string nom
@@ -126,6 +130,12 @@ namespace MyDemonList.Web.Components.Pages
         private string _searchQuery = string.Empty;
         private Liste? _listeCourante;
         private int _listeId;
+        private ElementReference _articleElement;
+        private bool _vueMobileDetail;
+        private string? _dernierParametreJoueurMobile;
+        private bool _vueMobileInitialisee;
+        private bool _remonterVueMobileApresRendu;
+        private IJSObjectReference? _jsModule;
 
         private enum TabVue { Players, Creators, Wins }
         private enum TriParJoueur { PointsDesc, PointsAsc, NameAsc, NameDesc }
@@ -190,6 +200,8 @@ namespace MyDemonList.Web.Components.Pages
 
         protected override void OnParametersSet()
         {
+            SynchroniserVueMobile();
+
             if (_listeId == 0 || (_utilisateursAvecPoints.Count == 0 && _createursAvecNiveaux.Count == 0)) return;
 
             if (ParametreJoueurInvalide)
@@ -215,6 +227,64 @@ namespace MyDemonList.Web.Components.Pages
                 ?? 0;
 
             if (idParDefaut > 0) AfficherDetailsUtilisateur(idParDefaut);
+        }
+
+        private void SynchroniserVueMobile()
+        {
+            if (!_vueMobileInitialisee)
+            {
+                _vueMobileDetail = !string.IsNullOrWhiteSpace(JoueurSelectionne);
+                _dernierParametreJoueurMobile = JoueurSelectionne;
+                _vueMobileInitialisee = true;
+                return;
+            }
+
+            if (string.Equals(_dernierParametreJoueurMobile, JoueurSelectionne, StringComparison.Ordinal)) return;
+
+            _dernierParametreJoueurMobile = JoueurSelectionne;
+            _vueMobileDetail = !string.IsNullOrWhiteSpace(JoueurSelectionne);
+            _remonterVueMobileApresRendu = true;
+        }
+
+        private void ChangerVueMobile(bool afficherDetail)
+        {
+            if (afficherDetail && _utilisateurSelectionne is null) return;
+            if (_vueMobileDetail == afficherDetail) return;
+
+            _vueMobileDetail = afficherDetail;
+            _remonterVueMobileApresRendu = true;
+        }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (!_remonterVueMobileApresRendu) return;
+
+            _remonterVueMobileApresRendu = false;
+
+            try
+            {
+                _jsModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "./Components/Pages/ClassementPage.razor.js");
+                await _jsModule.InvokeVoidAsync("remonterConteneur", _articleElement);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_jsModule is null) return;
+
+            try
+            {
+                await _jsModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
         }
 
         private async Task<bool> PeutConsulterListeAsync(MyDemonListWebDbContext dbContext, Liste liste)

@@ -20,7 +20,25 @@
 
 <h1 class="visually-hidden">@ObtenirTitrePage()</h1>
 
-<div class="article">
+<div @ref="_articleElement" class="article @(_utilisateurSelectionne is null ? "sans-selection" : string.IsNullOrWhiteSpace(JoueurSelectionne) ? "selection-par-defaut" : "avec-selection") @(_vueMobileDetail ? "vue-mobile-detail" : "vue-mobile-liste")">
+    <div class="bascule-vue-mobile" role="tablist" aria-label="@Texte["ChangerVue", "Changer de vue"]">
+        <button type="button"
+                role="tab"
+                aria-selected="@(!_vueMobileDetail)"
+                class="@(!_vueMobileDetail ? "active" : null)"
+                @onclick="() => ChangerVueMobile(false)">
+            @Texte["Classement", "Classement"]
+        </button>
+        <button type="button"
+                role="tab"
+                aria-selected="@_vueMobileDetail"
+                class="@(_vueMobileDetail ? "active" : null)"
+                disabled="@(_utilisateurSelectionne is null)"
+                @onclick="() => ChangerVueMobile(true)">
+            @Texte["Profil", "Profil"]
+        </button>
+    </div>
+
     <div class="liste-utilisateur">
         <div class="barre-outil">
             <label class="visually-hidden" for="recherche-joueur">@Texte["RechercherJoueur", "Rechercher un joueur..."]</label>

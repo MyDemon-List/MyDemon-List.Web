@@ -5,7 +5,7 @@
 }
 
 .gestion-page {
-    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
     overflow-y: auto;
     box-sizing: border-box;
     scrollbar-width: thin;
@@ -2042,6 +2042,47 @@ a.chip:hover {
     .formulaire-moderation {
         padding: 17px;
     }
+
+    .modal-confirm {
+        width: calc(100% - 20px);
+        max-height: calc(100dvh - 20px);
+        padding: 17px;
+        overflow-y: auto;
+    }
+
+    .table-niveaux {
+        overflow-x: clip;
+    }
+
+    .recherche-niveau,
+    .outils-niveaux {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 390px) {
+    .gestion-page-contenu {
+        padding-inline: 7px;
+    }
+
+    .formulaire-niveau,
+    .formulaire-parametres,
+    .formulaire-moderation,
+    .moderation-section,
+    .parametres-section {
+        padding-inline: 13px;
+    }
+
+    .difficulte-options-principales,
+    .difficulte-options-variantes {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .modal-actions button {
+        width: 100%;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2054,5 +2095,38 @@ a.chip:hover {
     .position-edit button,
     .btn {
         transition: none;
+    }
+}
+
+.gestion-page,
+.gestion-page-contenu,
+.formulaire-niveau,
+.formulaire-parametres,
+.formulaire-moderation {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+}
+
+@media (max-width: 700px) {
+    .onglets {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow: visible;
+    }
+
+    .onglet {
+        min-width: 0;
+        min-height: 44px;
+        white-space: normal;
+        text-align: center;
+    }
+
+    .btn,
+    .actions button,
+    .position-edit button {
+        min-height: 44px;
     }
 }
