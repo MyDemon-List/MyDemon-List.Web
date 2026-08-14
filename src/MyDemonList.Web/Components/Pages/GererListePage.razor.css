@@ -949,6 +949,60 @@ a.chip:hover {
     gap: 8px;
 }
 
+.btn-ajout-masse {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #dcb7ec;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.btn-ajout-masse:hover {
+    color: var(--white);
+}
+
+.btn-ajout-masse:focus-visible {
+    outline: 2px solid var(--purple-focus);
+    outline-offset: 3px;
+    border-radius: 2px;
+}
+
+.ajout-createurs-masse {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    padding: 12px;
+    border: 1px solid rgba(163, 59, 208, .3);
+    border-radius: var(--radius-md);
+    background: rgba(136, 27, 182, .07);
+}
+
+.ajout-createurs-masse label {
+    grid-column: 1 / -1;
+}
+
+.input-createurs-masse {
+    grid-column: 1 / -1;
+    min-height: 145px;
+    resize: vertical;
+    line-height: 1.45;
+}
+
+.aide-createurs-masse {
+    align-self: center;
+    color: var(--text-subtle);
+    font-size: .78rem;
+    line-height: 1.4;
+}
+
+.ajout-createurs-masse .btn {
+    align-self: end;
+}
+
 .apercu-miniature {
     display: block;
     width: 280px;
@@ -2275,6 +2329,15 @@ a.chip:hover {
     .actions-formulaire,
     .modal-actions {
         flex-direction: column;
+    }
+
+    .ajout-createurs-masse {
+        grid-template-columns: 1fr;
+    }
+
+    .ajout-createurs-masse .btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .difficulte-options-principales {

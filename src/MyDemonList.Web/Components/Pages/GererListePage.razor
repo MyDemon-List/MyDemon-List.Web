@@ -398,6 +398,33 @@ else
                             <input id="niveau-createurs" class="input" value="@_formCreateurInput" @oninput="OnCreateurInput" autocomplete="off" placeholder="@Texte["NomCreateur", "Nom d'un créateur"]" />
                             <button type="button" class="btn" @onclick="() => AjouterCreateur(null)">@Texte["Ajouter", "Ajouter"]</button>
                         </div>
+                        <button type="button"
+                                class="btn-ajout-masse"
+                                aria-expanded="@_afficherAjoutCreateursEnMasse"
+                                @onclick="BasculerAjoutCreateursEnMasse">
+                            @(_afficherAjoutCreateursEnMasse
+                                ? Texte["FermerAjoutCreateursEnMasse", "Fermer l'ajout en masse"]
+                                : Texte["OuvrirAjoutCreateursEnMasse", "Ajouter plusieurs créateurs"])
+                        </button>
+                        @if (_afficherAjoutCreateursEnMasse)
+                        {
+                            <div class="ajout-createurs-masse">
+                                <label for="niveau-createurs-masse">@Texte["CreateursEnMasse", "Créateurs à ajouter en masse"]</label>
+                                <textarea id="niveau-createurs-masse"
+                                          class="input input-createurs-masse"
+                                          @bind="_formCreateursEnMasse"
+                                          @bind:event="oninput"
+                                          rows="7"
+                                          placeholder="@Texte["CreateursEnMassePlaceholder", "Un créateur par ligne"]"></textarea>
+                                <span class="aide-createurs-masse">@Texte["CreateursEnMasseAide", "Chaque retour à la ligne sépare deux créateurs. Les espaces restent dans le pseudo."]</span>
+                                <button type="button"
+                                        class="btn"
+                                        disabled="@string.IsNullOrWhiteSpace(_formCreateursEnMasse)"
+                                        @onclick="AjouterCreateursEnMasse">
+                                    @Texte["AjouterTousCreateurs", "Ajouter tous les créateurs"]
+                                </button>
+                            </div>
+                        }
                         @if (_formCreateurSuggestions.Count > 0)
                         {
                             <div class="suggestions">
