@@ -65,8 +65,9 @@ namespace MyDemonList.Web.Components.Pages
         [Inject]
         private Traductions Texte { get; set; } = default!;
 
-        private string ObtenirTitrePage() =>
-            ListeSession.ListeNom is string nom ? $"{nom} - Gestion de la liste" : "Gestion de la liste";
+        private string ObtenirTitrePage() => ListeSession.ListeNom is string nom
+            ? Texte.Formater("TitreGestionListe", "{0} - Gestion de la liste", nom)
+            : Texte["GestionListeSousTitre", "Gestion de la liste"];
 
         private string ObtenirCheminCanonique() => _listeId > 0
             ? SeoUtils.CheminGestion(_listeId, _listeNom.Length > 0 ? _listeNom : ListeSession.ListeNom ?? "demon-list")
@@ -155,19 +156,19 @@ namespace MyDemonList.Web.Components.Pages
         private bool _listeAUneImageDeFond;
         private long _imageDeFondVersion = DateTime.UtcNow.Ticks;
 
-        private static string NomModeRawFootage(RawFootageMode mode) => mode switch
+        private string NomModeRawFootage(RawFootageMode mode) => mode switch
         {
-            RawFootageMode.None => "Aucun",
-            RawFootageMode.All => "Pour tous les niveaux",
-            RawFootageMode.FromTop => "À partir du top",
+            RawFootageMode.None => Texte["Aucun", "Aucun"],
+            RawFootageMode.All => Texte["RawTousNiveaux", "Pour tous les niveaux"],
+            RawFootageMode.FromTop => Texte["RawDepuisTop", "À partir du top"],
             _ => mode.ToString()
         };
 
-        private static string DescriptionModeRawFootage(RawFootageMode mode) => mode switch
+        private string DescriptionModeRawFootage(RawFootageMode mode) => mode switch
         {
-            RawFootageMode.None => "Aucune vidéo brute n'est demandée.",
-            RawFootageMode.All => "Une vidéo brute est requise pour chaque niveau.",
-            RawFootageMode.FromTop => "Une vidéo brute est requise à partir d'une position choisie.",
+            RawFootageMode.None => Texte["RawJamaisAide", "Aucune vidéo brute n'est demandée."],
+            RawFootageMode.All => Texte["RawTousNiveauxAide", "Une vidéo brute est requise pour chaque niveau."],
+            RawFootageMode.FromTop => Texte["RawDepuisTopAide", "Une vidéo brute est requise à partir d'une position choisie."],
             _ => string.Empty
         };
 
@@ -424,14 +425,14 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (file.Size > TailleMaxBackground)
                 {
-                    _parametresErreur = $"L'image dépasse la taille maximale autorisée ({TailleMaxBackground / (1024 * 1024)} Mo).";
+                    _parametresErreur = Texte.Formater("ImageTropGrande", "L'image dépasse la taille maximale autorisée ({0} Mo).", TailleMaxBackground / (1024 * 1024));
                     return;
                 }
 
                 string extension = Path.GetExtension(file.Name).ToLower();
                 if (!ExtensionsAutorisees.Contains(extension))
                 {
-                    _parametresErreur = $"Seules les images {string.Join(", ", ExtensionsAutorisees)} sont autorisées.";
+                    _parametresErreur = Texte.Formater("ExtensionsImagesAutorisees", "Seules les images {0} sont autorisées.", string.Join(", ", ExtensionsAutorisees));
                     return;
                 }
 
@@ -442,7 +443,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (!NiveauService.EstImageValide(bytes))
                 {
-                    _parametresErreur = "Le fichier fourni n'est pas une image valide.";
+                    _parametresErreur = Texte["ImageInvalide", "Le fichier fourni n'est pas une image valide."];
                     return;
                 }
 
@@ -452,7 +453,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _parametresErreur = $"Erreur lors de la sélection de l'image : {ex.Message}";
+                _parametresErreur = Texte.Formater("ErreurSelectionImage", "Erreur lors de la sélection de l'image : {0}", ex.Message);
             }
         }
 
@@ -470,20 +471,20 @@ namespace MyDemonList.Web.Components.Pages
                 Liste? liste = await dbContext.Listes.FirstOrDefaultAsync(l => l.Id == _listeId);
                 if (liste == null)
                 {
-                    _parametresErreur = "Liste introuvable.";
+                    _parametresErreur = Texte["ListeIntrouvable", "Liste introuvable."];
                     return;
                 }
 
                 string nom = (_listeNom ?? string.Empty).Trim();
                 if (nom.Length < 3)
                 {
-                    _parametresErreur = "Le nom doit contenir au moins 3 caractères.";
+                    _parametresErreur = Texte["NomTropCourt", "Le nom doit contenir au moins 3 caractères."];
                     return;
                 }
 
                 if (!string.IsNullOrWhiteSpace(_listeDiscordServerUrl) && !VideoUtils.EstUrlDiscordValide(_listeDiscordServerUrl))
                 {
-                    _parametresErreur = "Le lien Discord doit être une URL valide vers discord.gg ou discord.com.";
+                    _parametresErreur = Texte["LienDiscordInvalide", "Le lien Discord doit être une URL valide vers discord.gg ou discord.com."];
                     return;
                 }
 
@@ -529,7 +530,7 @@ namespace MyDemonList.Web.Components.Pages
                     bool success = NiveauService.SaveBackgroundListe(_listeId, _backgroundImageBytes);
                     if (!success)
                     {
-                        _parametresErreur = "Erreur lors de l'enregistrement de l'image de fond.";
+                        _parametresErreur = Texte["ErreurSauvegardeImageFond", "Erreur lors de l'enregistrement de l'image de fond."];
                         return;
                     }
                     _backgroundImageBytes = null;
@@ -549,7 +550,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _parametresErreur = $"Erreur lors de la sauvegarde : {ex.Message}";
+                _parametresErreur = Texte.Formater("ErreurSauvegarde", "Erreur lors de la sauvegarde : {0}", ex.Message);
             }
             finally
             {

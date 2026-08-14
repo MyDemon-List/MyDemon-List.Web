@@ -532,7 +532,7 @@ namespace MyDemonList.Web.Components.Pages
                 }
                 if (!VideoUtils.EstUrlVideoValide(_newSubmission.RawFootageUrl))
                 {
-                    _errorMessage = "L'URL du Raw Footage doit pointer vers YouTube, Twitch ou Google Drive.";
+                _errorMessage = Texte["UrlRawFootageInvalide", "L'URL du Raw Footage doit pointer vers YouTube, Twitch ou Google Drive."];
                     _submissionSuccess = false;
                     return;
                 }
@@ -653,7 +653,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _errorMessage = $"Erreur lors de la mise à jour : {ex.Message}";
+                _errorMessage = Texte.Formater("ErreurMiseAJour", "Erreur lors de la mise à jour : {0}", ex.Message);
             }
             finally
             {
@@ -723,7 +723,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _errorMessage = $"Erreur lors de la vérification : {ex.Message}";
+                _errorMessage = Texte.Formater("ErreurVerification", "Erreur lors de la vérification : {0}", ex.Message);
                 return false;
             }
         }

@@ -115,7 +115,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _soumissionErreur = $"Erreur lors de l'acceptation : {ex.Message}";
+                _soumissionErreur = Texte.Formater("ErreurAcceptation", "Erreur lors de l'acceptation : {0}", ex.Message);
             }
             finally
             {
@@ -177,7 +177,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _soumissionErreur = $"Erreur lors du refus : {ex.Message}";
+                _soumissionErreur = Texte.Formater("ErreurRefus", "Erreur lors du refus : {0}", ex.Message);
             }
             finally
             {

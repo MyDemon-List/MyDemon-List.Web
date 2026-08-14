@@ -176,8 +176,8 @@
                 <section class="section-listes section-archives">
                     <header class="entete-section">
                         <div class="entete-texte">
-                            <h2>Listes supprimées</h2>
-                            <p>Ces listes sont masquées du site. Ouvrez leur historique pour les restaurer.</p>
+                            <h2>@Texte["ListesSupprimees", "Listes supprimées"]</h2>
+                            <p>@Texte["ListesSupprimeesAide", "Ces listes sont masquées du site. Ouvrez leur historique pour les restaurer."]</p>
                         </div>
                         <span class="compteur-listes">@_listesSupprimees.Count</span>
                     </header>
@@ -188,15 +188,15 @@
                             <article @key="liste.Id" class="carte-liste carte-liste--archive" @onclick="() => OuvrirHistoriqueListe(liste)">
                                 <div class="carte-contenu">
                                     <div class="badges-carte">
-                                        <span class="badge badge-prive">Supprimée</span>
+                                        <span class="badge badge-prive">@Texte["Supprimee", "Supprimée"]</span>
                                     </div>
                                     <div class="corps-carte">
                                         <h2 class="titre-carte">@liste.Nom</h2>
-                                        <p class="description-carte">Supprimée le @(liste.DateSuppression?.ToString("dd/MM/yyyy à HH:mm") ?? "date inconnue")</p>
+                                        <p class="description-carte">@Texte.Formater("SupprimeeLe", "Supprimée le {0}", liste.DateSuppression?.ToString("g", Texte.Culture) ?? Texte["DateInconnue", "date inconnue"])</p>
                                     </div>
                                     <footer class="carte-liste-pied">
-                                        <span>Données conservées</span>
-                                        <button type="button" class="btn-gerer" @onclick="() => OuvrirHistoriqueListe(liste)" @onclick:stopPropagation="true">Historique</button>
+                                        <span>@Texte["DonneesConservees", "Données conservées"]</span>
+                                        <button type="button" class="btn-gerer" @onclick="() => OuvrirHistoriqueListe(liste)" @onclick:stopPropagation="true">@Texte["Historique", "Historique"]</button>
                                     </footer>
                                 </div>
                             </article>

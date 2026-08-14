@@ -122,7 +122,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (string.IsNullOrWhiteSpace(_discordId))
                 {
-                    _erreur = "Identifiant Discord introuvable.";
+                    _erreur = Texte["IdentifiantDiscordIntrouvable", "Identifiant Discord introuvable."];
                     _isLoading = false;
                     return;
                 }
@@ -246,7 +246,7 @@ namespace MyDemonList.Web.Components.Pages
                     Utilisateur? utilisateur = await dbContext.Utilisateurs.FindAsync(_utilisateurId);
                     if (utilisateur is null)
                     {
-                        _validation = "Utilisateur introuvable.";
+                        _validation = Texte["UtilisateurIntrouvable", "Utilisateur introuvable."];
                         return;
                     }
 

@@ -33,19 +33,19 @@ namespace MyDemonList.Web.Components.Pages
 
         private IEnumerable<RoleListe> RolesAssignables => Enum.GetValues<RoleListe>().Where(PeutAssignerRole);
 
-        private static string NomRole(RoleListe role) => role switch
+        private string NomRole(RoleListe role) => role switch
         {
-            RoleListe.Administrateur => "Administrateur",
-            RoleListe.EditeurNiveaux => "Éditeur de niveaux",
-            RoleListe.Moderateur => "Modérateur",
+            RoleListe.Administrateur => Texte["Administrateur", "Administrateur"],
+            RoleListe.EditeurNiveaux => Texte["EditeurNiveaux", "Éditeur de niveaux"],
+            RoleListe.Moderateur => Texte["Moderateur", "Modérateur"],
             _ => role.ToString()
         };
 
-        private static string DescriptionRole(RoleListe role) => role switch
+        private string DescriptionRole(RoleListe role) => role switch
         {
-            RoleListe.Administrateur => "Accès complet aux niveaux (créer, modifier, réordonner, supprimer) et aux soumissions (accepter/refuser). Peut nommer et révoquer des Éditeurs et Modérateurs. N'a pas accès aux paramètres de la liste.",
-            RoleListe.EditeurNiveaux => "Peut créer, modifier et réordonner les niveaux (pas les supprimer), et gérer les soumissions (accepter/refuser). Aucun accès aux paramètres ni à la modération des rôles.",
-            RoleListe.Moderateur => "Peut uniquement accepter ou refuser les soumissions. Aucun accès aux niveaux, aux paramètres ni à la modération des rôles.",
+            RoleListe.Administrateur => Texte["RoleAdministrateurAide", "Accès complet aux niveaux (créer, modifier, réordonner, supprimer) et aux soumissions (accepter/refuser). Peut nommer et révoquer des Éditeurs et Modérateurs. N'a pas accès aux paramètres de la liste."],
+            RoleListe.EditeurNiveaux => Texte["RoleEditeurAide", "Peut créer, modifier et réordonner les niveaux (pas les supprimer), et gérer les soumissions (accepter/refuser). Aucun accès aux paramètres ni à la modération des rôles."],
+            RoleListe.Moderateur => Texte["RoleModerateurAide", "Peut uniquement accepter ou refuser les soumissions. Aucun accès aux niveaux, aux paramètres ni à la modération des rôles."],
             _ => string.Empty
         };
 
@@ -176,13 +176,13 @@ namespace MyDemonList.Web.Components.Pages
 
             if (_candidatSelectionne is not DiscordUtilisateurSuggestion candidat)
             {
-                _moderationErreur = "Veuillez sélectionner un utilisateur relié à Discord dans la liste de suggestions.";
+                _moderationErreur = Texte["SelectionUtilisateurDiscordRequise", "Veuillez sélectionner un utilisateur relié à Discord dans la liste de suggestions."];
                 return;
             }
 
             if (!PeutAssignerRole(_roleAAssigner))
             {
-                _moderationErreur = "Vous n'avez pas la permission d'attribuer ce rôle.";
+                _moderationErreur = Texte["PermissionAttribuerRoleRefusee", "Vous n'avez pas la permission d'attribuer ce rôle."];
                 return;
             }
 
@@ -203,7 +203,7 @@ namespace MyDemonList.Web.Components.Pages
                 {
                     if (!PeutRevoquerRole(existant.Role))
                     {
-                        _moderationErreur = "Vous ne pouvez pas modifier le rôle de cet utilisateur.";
+                        _moderationErreur = Texte["ModificationRoleUtilisateurRefusee", "Vous ne pouvez pas modifier le rôle de cet utilisateur."];
                         return;
                     }
 
@@ -250,7 +250,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _moderationErreur = $"Erreur lors de l'attribution du rôle : {ex.Message}";
+                _moderationErreur = Texte.Formater("ErreurAttributionRole", "Erreur lors de l'attribution du rôle : {0}", ex.Message);
             }
             finally
             {
@@ -266,7 +266,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (!PeutRevoquerRole(membre.Role) || !PeutAssignerRole(nouveauRole))
             {
-                _moderationErreur = "Vous n'avez pas la permission de modifier ce rôle.";
+                _moderationErreur = Texte["PermissionModifierRoleRefusee", "Vous n'avez pas la permission de modifier ce rôle."];
                 return;
             }
 
@@ -305,7 +305,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _moderationErreur = $"Erreur lors de la modification du rôle : {ex.Message}";
+                _moderationErreur = Texte.Formater("ErreurModificationRole", "Erreur lors de la modification du rôle : {0}", ex.Message);
             }
         }
 
@@ -331,7 +331,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (!PeutRevoquerRole(membre.Role))
             {
-                _moderationErreur = "Vous n'avez pas la permission de retirer ce rôle.";
+                _moderationErreur = Texte["PermissionRetirerRoleRefusee", "Vous n'avez pas la permission de retirer ce rôle."];
                 return;
             }
 
@@ -369,7 +369,7 @@ namespace MyDemonList.Web.Components.Pages
             }
             catch (Exception ex)
             {
-                _moderationErreur = $"Erreur lors du retrait du rôle : {ex.Message}";
+                _moderationErreur = Texte.Formater("ErreurRetraitRole", "Erreur lors du retrait du rôle : {0}", ex.Message);
             }
             finally
             {

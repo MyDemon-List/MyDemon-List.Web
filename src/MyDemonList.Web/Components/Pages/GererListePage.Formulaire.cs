@@ -229,8 +229,8 @@ namespace MyDemonList.Web.Components.Pages
                 _formMiniatureNiveauBase64 = null;
                 _formMiniatureNiveauContentType = null;
                 _formErreur = ex is IOException
-                    ? $"L'image dépasse la taille maximale autorisée ({TailleMaxImage / (1024 * 1024)} Mo)."
-                    : $"Erreur lors de la lecture de l'image : {ex.Message}";
+                    ? Texte.Formater("ImageTropGrande", "L'image dépasse la taille maximale autorisée ({0} Mo).", TailleMaxImage / (1024 * 1024))
+                    : Texte.Formater("ErreurLectureImage", "Erreur lors de la lecture de l'image : {0}", ex.Message);
             }
         }
 
@@ -257,7 +257,7 @@ namespace MyDemonList.Web.Components.Pages
             Niveau? niveauAvecLeMemeId = TrouverNiveauAvecLeMemeId(_formIdDuNiveauDansLeJeu);
             if (niveauAvecLeMemeId is not null)
             {
-                _formIdDuNiveauErreur = $"Cet ID est déjà utilisé par le niveau « {niveauAvecLeMemeId.Nom} » dans cette liste.";
+                _formIdDuNiveauErreur = Texte.Formater("IdNiveauDejaUtiliseNom", "Cet ID est déjà utilisé par le niveau « {0} » dans cette liste.", niveauAvecLeMemeId.Nom);
                 return;
             }
 
@@ -450,7 +450,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (_niveauEnEditionId is null && !PeutAjouterNiveauSansDemande)
             {
-                _formErreur = $"Cette liste a atteint la limite de {LimiteNiveauxActuelle} niveaux. Faites une demande d'augmentation depuis cet onglet.";
+                _formErreur = Texte.Formater("LimiteNiveauxAugmentation", "Cette liste a atteint la limite de {0} niveaux. Faites une demande d'augmentation depuis cet onglet.", LimiteNiveauxActuelle);
                 return;
             }
 
@@ -458,50 +458,50 @@ namespace MyDemonList.Web.Components.Pages
 
             if (string.IsNullOrWhiteSpace(_formNom) || _formNom.Trim().Length < 2)
             {
-                _formErreur = "Le nom du niveau est requis.";
+                _formErreur = Texte["NomNiveauRequis", "Le nom du niveau est requis."];
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_formIdDuNiveauDansLeJeu))
             {
-                _formErreur = "L'ID du niveau dans le jeu est requis.";
+                _formErreur = Texte["IdNiveauRequis", "L'ID du niveau dans le jeu est requis."];
                 return;
             }
 
             Niveau? niveauAvecLeMemeId = TrouverNiveauAvecLeMemeId(_formIdDuNiveauDansLeJeu);
             if (niveauAvecLeMemeId is not null)
             {
-                _formIdDuNiveauErreur = $"Cet ID est déjà utilisé par le niveau « {niveauAvecLeMemeId.Nom} » dans cette liste.";
+                _formIdDuNiveauErreur = Texte.Formater("IdNiveauDejaUtiliseNom", "Cet ID est déjà utilisé par le niveau « {0} » dans cette liste.", niveauAvecLeMemeId.Nom);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_formUrlVerification))
             {
-                _formErreur = "L'URL de vérification est requise.";
+                _formErreur = Texte["UrlVerificationRequise", "L'URL de vérification est requise."];
                 return;
             }
 
             if (!VideoUtils.EstUrlVideoValide(_formUrlVerification))
             {
-                _formErreur = "L'URL de vérification doit pointer vers YouTube, Twitch ou Google Drive.";
+                _formErreur = Texte["UrlVerificationInvalide", "L'URL de vérification doit pointer vers YouTube, Twitch ou Google Drive."];
                 return;
             }
 
             if (_formRatingId is null)
             {
-                _formErreur = "Veuillez choisir une difficulté.";
+                _formErreur = Texte["DifficulteRequise", "Veuillez choisir une difficulté."];
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_formPublisherInput))
             {
-                _formErreur = "Le publisher est requis.";
+                _formErreur = Texte["PublieurRequis", "Le publieur est requis."];
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_formVerifieurInput))
             {
-                _formErreur = "Le vérifieur est requis.";
+                _formErreur = Texte["VerifieurRequis", "Le vérifieur est requis."];
                 return;
             }
 
@@ -510,19 +510,19 @@ namespace MyDemonList.Web.Components.Pages
 
             if (_formCreateurs.Count == 0)
             {
-                _formErreur = "Au moins un créateur est requis.";
+                _formErreur = Texte["CreateurRequis", "Au moins un créateur est requis."];
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_formMiniatureNiveauBase64))
             {
-                _formErreur = "Une image est requise (récupérée automatiquement via l'ID du niveau ou importée manuellement).";
+                _formErreur = Texte["ImageNiveauRequise", "Une image est requise (récupérée automatiquement via l'ID du niveau ou importée manuellement)."];
                 return;
             }
 
             if (!NiveauService.EstImageBase64Valide(_formMiniatureNiveauBase64))
             {
-                _formErreur = "Le fichier fourni n'est pas une image valide.";
+                _formErreur = Texte["ImageInvalide", "Le fichier fourni n'est pas une image valide."];
                 return;
             }
 
@@ -546,7 +546,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (await niveauxAvecLeMemeId.AnyAsync())
                 {
-                    _formIdDuNiveauErreur = $"L'ID {idNiveauDansLeJeu} est déjà utilisé par un autre niveau de cette liste.";
+                    _formIdDuNiveauErreur = Texte.Formater("IdNiveauDejaUtilise", "L'ID {0} est déjà utilisé par un autre niveau de cette liste.", idNiveauDansLeJeu);
                     return;
                 }
 
@@ -659,11 +659,11 @@ namespace MyDemonList.Web.Components.Pages
                 postgresException.SqlState == PostgresErrorCodes.UniqueViolation &&
                 string.Equals(postgresException.ConstraintName, "IX_Niveaux_Liste_IdJeu", StringComparison.OrdinalIgnoreCase))
             {
-                _formIdDuNiveauErreur = "Cet ID vient d'être utilisé par un autre niveau de cette liste.";
+                _formIdDuNiveauErreur = Texte["IdNiveauConcurrent", "Cet ID vient d'être utilisé par un autre niveau de cette liste."];
             }
             catch (Exception ex)
             {
-                _formErreur = $"Erreur lors de l'enregistrement : {ex.Message}";
+                _formErreur = Texte.Formater("ErreurEnregistrement", "Erreur lors de l'enregistrement : {0}", ex.Message);
             }
             finally
             {
