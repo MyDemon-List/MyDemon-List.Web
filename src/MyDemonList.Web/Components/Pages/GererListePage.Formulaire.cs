@@ -155,9 +155,20 @@ namespace MyDemonList.Web.Components.Pages
             _formVerifieurSuggestions = FiltrerUtilisateurs(_formVerifieurInput);
         }
 
-        private void OnCreateurInput(ChangeEventArgs e)
+        private void OnCreateurInput()
         {
-            _formCreateurInput = e.Value?.ToString() ?? string.Empty;
+            if (ExtraireNomsCreateurs(_formCreateurInput).Length > 1)
+            {
+                string texteColle = _formCreateurInput.Trim();
+                _formCreateursEnMasse = string.IsNullOrWhiteSpace(_formCreateursEnMasse)
+                    ? texteColle
+                    : $"{_formCreateursEnMasse.TrimEnd()}{Environment.NewLine}{texteColle}";
+                _formCreateurInput = string.Empty;
+                _formCreateurSuggestions = [];
+                _afficherAjoutCreateursEnMasse = true;
+                return;
+            }
+
             _formCreateurSuggestions = FiltrerUtilisateurs(_formCreateurInput);
         }
 
@@ -213,13 +224,7 @@ namespace MyDemonList.Web.Components.Pages
 
         private void AjouterCreateursEnMasse()
         {
-            string[] noms = Regex.Split(
-                _formCreateursEnMasse.Trim(),
-                @"\r?\n+")
-                .Select(nom => nom.Trim())
-                .Where(nom => !string.IsNullOrWhiteSpace(nom))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+            string[] noms = ExtraireNomsCreateurs(_formCreateursEnMasse);
 
             foreach (string nom in noms)
             {
@@ -229,6 +234,15 @@ namespace MyDemonList.Web.Components.Pages
 
             _formCreateursEnMasse = string.Empty;
             _afficherAjoutCreateursEnMasse = false;
+        }
+
+        private static string[] ExtraireNomsCreateurs(string valeur)
+        {
+            return Regex.Split(valeur.Trim(), @"\r?\n+")
+                .Select(nom => nom.Trim())
+                .Where(nom => !string.IsNullOrWhiteSpace(nom))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
         }
 
         private void RetirerCreateur(string nom) => _formCreateurs.Remove(nom);

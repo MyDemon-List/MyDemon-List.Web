@@ -25,6 +25,9 @@ namespace MyDemonList.Web.Entities
 
         public RawFootageMode RawFootageMode { get; set; } = RawFootageMode.None;
         public int? RawFootageTopStart { get; set; }
+        public bool VideoToujoursRequise { get; set; } = true;
+        public int? VideoDifficulteMinimaleId { get; set; }
+        public int? VideoTopStart { get; set; }
 
         [ForeignKey("UtilisateurId")]
         public int UtilisateurId { get; set; }

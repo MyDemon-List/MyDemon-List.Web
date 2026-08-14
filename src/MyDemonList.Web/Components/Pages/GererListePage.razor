@@ -162,7 +162,7 @@ else
                                     <span class="chip">@Texte["Verifieur", "Vérifieur"] : @ligne.Niveau.Verifieur?.Nom</span>
                                     @if (ligne.NomsCreateurs.Count > 0)
                                     {
-                                        <span class="chip">@Texte["Createurs", "Créateurs"] : @string.Join(", ", ligne.NomsCreateurs)</span>
+                                        <span class="chip chip-createurs-liste">@Texte["Createurs", "Créateurs"] : @string.Join(", ", ligne.NomsCreateurs)</span>
                                     }
                                 </div>
                             </div>
@@ -395,7 +395,7 @@ else
                             }
                         </div>
                         <div class="ligne-ajout">
-                            <input id="niveau-createurs" class="input" value="@_formCreateurInput" @oninput="OnCreateurInput" autocomplete="off" placeholder="@Texte["NomCreateur", "Nom d'un créateur"]" />
+                            <textarea id="niveau-createurs" class="input input-createur-simple" @bind="_formCreateurInput" @bind:event="oninput" @bind:after="OnCreateurInput" rows="1" autocomplete="off" placeholder="@Texte["NomCreateur", "Nom d'un créateur"]"></textarea>
                             <button type="button" class="btn" @onclick="() => AjouterCreateur(null)">@Texte["Ajouter", "Ajouter"]</button>
                         </div>
                         <button type="button"
@@ -551,9 +551,13 @@ else
                                 }
 
                                 <div class="liens-soumission">
-                                    @if (urlIframe is null)
+                                    @if (urlIframe is null && !string.IsNullOrWhiteSpace(soumission.UrlVideo))
                                     {
                                         <a class="chip" href="@soumission.UrlVideo" target="_blank" rel="noopener noreferrer">@Texte["VoirVideo", "Voir la vidéo"]</a>
+                                    }
+                                    else if (string.IsNullOrWhiteSpace(soumission.UrlVideo))
+                                    {
+                                        <span class="chip">@Texte["SansVideo", "Sans vidéo"]</span>
                                     }
                                     @if (!string.IsNullOrWhiteSpace(soumission.RawFootageUrl))
                                     {
@@ -655,10 +659,84 @@ else
                     <section class="parametres-section">
                         <div class="parametres-section-entete">
                             <h3>@Texte["PreuvesVideo", "Preuves vidéo"]</h3>
-                            <p>@Texte["PreuvesVideoAide", "Définissez quand une vidéo brute doit accompagner une soumission."]</p>
+                            <p>@Texte["PreuvesVideoAide", "Définissez quand une vidéo de réussite et une vidéo brute sont obligatoires."]</p>
+                        </div>
+
+                        <div class="parametres-preuve-video">
+                            <div class="parametres-sous-section-entete">
+                                <h4>@Texte["VideoReussite", "Besoin d'une vidéo"]</h4>
+                                <p>@Texte["VideoReussiteAide", "Les réussites sans vidéo obligatoire sont validées immédiatement."]</p>
+                            </div>
+
+                            <label class="parametre-switch">
+                                <input type="checkbox" checked="@_videoToujoursRequise" @onchange="OnVideoToujoursRequiseChange" />
+                                <span class="parametre-switch-piste" aria-hidden="true"></span>
+                                <span class="parametre-switch-texte">
+                                    <strong>@Texte["VideoToujoursRequise", "Vidéo obligatoire pour tous les niveaux"]</strong>
+                                    <small>@Texte["VideoToujoursRequiseAide", "Désactivez cette option pour définir les niveaux qui nécessitent une preuve."]</small>
+                                </span>
+                            </label>
+
+                            @if (!_videoToujoursRequise)
+                            {
+                                <div class="criteres-video">
+                                    <div class="critere-video">
+                                        <label class="parametre-switch parametre-switch-compact">
+                                            <input type="checkbox" checked="@_videoDifficulteMinimaleId.HasValue" @onchange="OnCritereDifficulteVideoChange" />
+                                            <span class="parametre-switch-piste" aria-hidden="true"></span>
+                                            <span class="parametre-switch-texte">
+                                                <strong>@Texte["SeuilDifficulteVideo", "Seuil de difficulté"]</strong>
+                                                <small>@Texte["SeuilDifficulteVideoAide", "Les difficultés inférieures n'auront pas besoin de vidéo."]</small>
+                                            </span>
+                                        </label>
+
+                                        @if (_videoDifficulteMinimaleId.HasValue)
+                                        {
+                                            <div class="champ">
+                                                <label for="video-difficulte-minimale">@Texte["DifficulteMinimaleVideo", "Vidéo requise à partir de"]</label>
+                                                <select id="video-difficulte-minimale" class="input" @bind="_videoDifficulteMinimaleId">
+                                                    @foreach (Difficulte difficulte in ObtenirDifficultesVideoDisponibles())
+                                                    {
+                                                        <option value="@difficulte.Id">@difficulte.Nom</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="critere-video">
+                                        <label class="parametre-switch parametre-switch-compact">
+                                            <input type="checkbox" checked="@_videoTopStart.HasValue" @onchange="OnCritereClassementVideoChange" />
+                                            <span class="parametre-switch-piste" aria-hidden="true"></span>
+                                            <span class="parametre-switch-texte">
+                                                <strong>@Texte["SeuilClassementVideo", "Seuil de classement"]</strong>
+                                                <small>@Texte["SeuilClassementVideoAide", "La vidéo sera obligatoire à partir d'une position choisie."]</small>
+                                            </span>
+                                        </label>
+
+                                        @if (_videoTopStart.HasValue)
+                                        {
+                                            <div class="champ parametre-top-depart">
+                                                <label for="video-top">@Texte["TopDepartVideo", "Top de départ"]</label>
+                                                <input id="video-top" type="number" min="1" class="input" @bind="_videoTopStart" />
+                                                <small>@Texte["TopDepartVideoAide", "Exemple : 10 exige une vidéo pour les niveaux classés du top 10 au top 1."]</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (_videoDifficulteMinimaleId.HasValue && _videoTopStart.HasValue)
+                                {
+                                    <p class="aide-criteres-video">@Texte["DeuxCriteresVideoAide", "La vidéo est obligatoire dès que le niveau atteint l'un des deux seuils."]</p>
+                                }
+                            }
                         </div>
 
                         <div class="parametres-raw-footage">
+                            <div class="parametres-sous-section-entete">
+                                <h4>@Texte["VideoBrute", "Vidéo brute"]</h4>
+                                <p>@Texte["VideoBruteAide", "Ajoutez une preuve brute en complément de la vidéo de réussite."]</p>
+                            </div>
                             <div class="champ">
                                 <label for="raw-footage-mode">@Texte["RawFootageRequisLabel", "Raw Footage requis"]</label>
                                 <div class="parametre-combobox @(_menuRawFootageOuvert ? "ouvert" : "")">

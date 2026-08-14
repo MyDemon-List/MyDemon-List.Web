@@ -13,7 +13,10 @@ namespace MyDemonList.Web.Services
         bool EstPublique,
         string? DiscordServerUrl,
         RawFootageMode RawFootageMode,
-        int? RawFootageTopStart);
+        int? RawFootageTopStart,
+        bool VideoToujoursRequise = true,
+        int? VideoDifficulteMinimaleId = null,
+        int? VideoTopStart = null);
 
     public sealed record EtatSuppressionListeHistorique(
         bool EstSupprimee,
@@ -156,7 +159,10 @@ namespace MyDemonList.Web.Services
             liste.EstPublique,
             liste.DiscordServerUrl,
             liste.RawFootageMode,
-            liste.RawFootageTopStart);
+            liste.RawFootageTopStart,
+            liste.VideoToujoursRequise,
+            liste.VideoDifficulteMinimaleId,
+            liste.VideoTopStart);
 
         public static EtatSuppressionListeHistorique CapturerSuppression(Liste liste) => new(
             liste.EstSupprimee,
@@ -785,12 +791,20 @@ namespace MyDemonList.Web.Services
 
         private static void AppliquerParametres(Liste liste, ParametresListeHistorique parametres)
         {
+            bool ancienneConfigurationSansSeuil =
+                !parametres.VideoToujoursRequise &&
+                parametres.VideoDifficulteMinimaleId is null &&
+                parametres.VideoTopStart is null;
+
             liste.Nom = parametres.Nom;
             liste.Description = parametres.Description;
             liste.EstPublique = parametres.EstPublique;
             liste.DiscordServerUrl = parametres.DiscordServerUrl;
             liste.RawFootageMode = parametres.RawFootageMode;
             liste.RawFootageTopStart = parametres.RawFootageTopStart;
+            liste.VideoToujoursRequise = parametres.VideoToujoursRequise || ancienneConfigurationSansSeuil;
+            liste.VideoDifficulteMinimaleId = parametres.VideoDifficulteMinimaleId;
+            liste.VideoTopStart = parametres.VideoTopStart;
         }
 
         private static void AppliquerSuppression(Liste liste, EtatSuppressionListeHistorique suppression)

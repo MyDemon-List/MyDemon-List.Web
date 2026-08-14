@@ -49,8 +49,8 @@ namespace MyDemonList.Web.Components.Pages
                 : Texte["SoumettreReussite", "Soumettre une réussite"];
 
         private string ObtenirDescriptionSeo() => _listeCourante.Nom is string nom
-            ? Texte.Formater("SeoSoumissionDescription", "Soumettez une preuve de réussite pour un niveau de la demon list {0}.", nom)
-            : Texte["SeoSoumissionDescriptionGenerique", "Soumettez une preuve de réussite pour un niveau Geometry Dash."];
+            ? Texte.Formater("SeoSoumissionDescription", "Déclarez une réussite pour un niveau de la demon list {0}.", nom)
+            : Texte["SeoSoumissionDescriptionGenerique", "Déclarez une réussite pour un niveau Geometry Dash."];
 
         private string ObtenirCheminCanonique() => _listeCourante.Id > 0
             ? SeoUtils.CheminSoumission(_listeCourante.Id, _listeCourante.Nom)
@@ -100,6 +100,20 @@ namespace MyDemonList.Web.Components.Pages
             return false;
         }
 
+        private bool VideoEstRequise(Niveau niveau)
+        {
+            Classement? classement = _listeEntiereClassements.FirstOrDefault(c => c.NiveauId == niveau.Id);
+            return PreuveVideoUtils.EstRequise(_listeCourante, niveau, classement, _listeEntiereFeatures);
+        }
+
+        private bool VideoEstRequisePourNiveauSelectionne() =>
+            _niveauSelectionne is null || VideoEstRequise(_niveauSelectionne);
+
+        private bool AcceptationAutomatiqueDisponible() =>
+            _niveauSelectionne is not null &&
+            !VideoEstRequise(_niveauSelectionne) &&
+            !RawFootageEstRequis(_niveauSelectionne);
+
         private bool AfficherChampRawFootage() =>
             _listeCourante.RawFootageMode switch
             {
@@ -129,6 +143,7 @@ namespace MyDemonList.Web.Components.Pages
         private string _currentNiveauInput = string.Empty;
         private string _currentUtilisateurInput = string.Empty;
         private bool _submissionSuccess;
+        private bool _reussiteAccepteeAutomatiquement;
         private int _selectedNiveauIndex = -1;
         private int _selectedUtilisateurIndex = -1;
         private bool _isLoading;
@@ -468,8 +483,10 @@ namespace MyDemonList.Web.Components.Pages
             StateHasChanged();
         }
 
-        private async void ValidateAndSubmit()
+        private async Task ValidateAndSubmit()
         {
+            _reussiteAccepteeAutomatiquement = false;
+
             if (_isAuthenticated)
             {
                 _currentUtilisateurInput = _connectedUsername ?? string.Empty;
@@ -483,7 +500,7 @@ namespace MyDemonList.Web.Components.Pages
                 return;
             }
 
-            if (!_isAuthenticated && string.IsNullOrWhiteSpace(_currentUtilisateurInput))
+            if (string.IsNullOrWhiteSpace(_currentUtilisateurInput))
             {
                 _errorMessage = Texte["ChampUtilisateurRequis", "Veuillez remplir le champ : Nom d'utilisateur."];
                 _submissionSuccess = false;
@@ -507,21 +524,25 @@ namespace MyDemonList.Web.Components.Pages
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(_newSubmission.UrlVideo))
+            ConfirmerNiveau();
+            bool videoRequise = VideoEstRequisePourNiveauSelectionne();
+
+            if (videoRequise && string.IsNullOrWhiteSpace(_newSubmission.UrlVideo))
             {
                 _errorMessage = Texte["ChampVideoRequis", "Veuillez remplir le champ : URL de la vidéo."];
                 _submissionSuccess = false;
                 return;
             }
 
-            if (!VideoUtils.EstUrlVideoValide(_newSubmission.UrlVideo))
+            if (!string.IsNullOrWhiteSpace(_newSubmission.UrlVideo) && !VideoUtils.EstUrlVideoValide(_newSubmission.UrlVideo))
             {
                 _errorMessage = Texte["UrlVideoInvalide", "L'URL de la vidéo doit pointer vers YouTube, Twitch ou Google Drive."];
                 _submissionSuccess = false;
                 return;
             }
 
-            ConfirmerNiveau();
+            _newSubmission.UrlVideo = _newSubmission.UrlVideo?.Trim() ?? string.Empty;
+
             if (_niveauSelectionne != null && RawFootageEstRequis(_niveauSelectionne))
             {
                 if (string.IsNullOrWhiteSpace(_newSubmission.RawFootageUrl))
@@ -556,13 +577,126 @@ namespace MyDemonList.Web.Components.Pages
                 return;
             }
 
-            if (_soumissionExistante is not null)
+            if (AcceptationAutomatiqueDisponible())
+                await AccepterAutomatiquement();
+            else if (_soumissionExistante is not null)
                 await MettreAJourSoumission();
             else
                 await HandleValidSubmit();
 
             _isLoading = false;
             StateHasChanged();
+        }
+
+        private async Task AccepterAutomatiquement()
+        {
+            if (_niveauSelectionne is null) return;
+
+            try
+            {
+                using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(DbContextOptions);
+                await using var transaction = await dbContext.Database.BeginTransactionAsync();
+
+                SoumissionNiveau? soumission = _soumissionExistante is null
+                    ? null
+                    : await dbContext.SoumissionsNiveaux
+                        .FirstOrDefaultAsync(s => s.IdSoumission == _soumissionExistante.IdSoumission);
+
+                if (soumission is null)
+                {
+                    soumission = new SoumissionNiveau
+                    {
+                        NiveauId = _niveauSelectionne.Id,
+                        UtilisateurId = _isAuthenticated ? _connectedUtilisateurId : null,
+                        NomUtilisateur = _currentUtilisateurInput.Trim(),
+                        UrlVideo = _newSubmission.UrlVideo,
+                        RawFootageUrl = null,
+                        DateSoumission = DateTime.Now
+                    };
+                    dbContext.SoumissionsNiveaux.Add(soumission);
+                }
+                else
+                {
+                    soumission.UtilisateurId = _isAuthenticated ? _connectedUtilisateurId : soumission.UtilisateurId;
+                    soumission.UrlVideo = _newSubmission.UrlVideo;
+                    soumission.RawFootageUrl = null;
+                    soumission.DateSoumission = DateTime.Now;
+                }
+
+                await dbContext.SaveChangesAsync();
+
+                Utilisateur? utilisateur = soumission.UtilisateurId is int utilisateurId
+                    ? await dbContext.Utilisateurs.FirstOrDefaultAsync(u => u.Id == utilisateurId)
+                    : null;
+
+                string nomUtilisateur = soumission.NomUtilisateur.Trim();
+                utilisateur ??= await dbContext.Utilisateurs
+                    .FirstOrDefaultAsync(u => u.Nom.ToLower() == nomUtilisateur.ToLower());
+
+                if (utilisateur is null)
+                {
+                    utilisateur = new Utilisateur { Nom = nomUtilisateur };
+                    dbContext.Utilisateurs.Add(utilisateur);
+                    await dbContext.SaveChangesAsync();
+                }
+
+                SoumissionHistorique soumissionAvant = HistoriqueListeService.CapturerSoumission(soumission) with
+                {
+                    UtilisateurId = utilisateur.Id
+                };
+
+                ReussiteNiveau? reussite = await dbContext.ReussitesNiveaux
+                    .FirstOrDefaultAsync(r => r.UtilisateurId == utilisateur.Id && r.NiveauId == _niveauSelectionne.Id);
+                ReussiteHistorique? reussiteAvant = reussite is null
+                    ? null
+                    : HistoriqueListeService.CapturerReussite(reussite);
+
+                if (reussite is null)
+                {
+                    dbContext.ReussitesNiveaux.Add(new ReussiteNiveau
+                    {
+                        UtilisateurId = utilisateur.Id,
+                        NiveauId = _niveauSelectionne.Id,
+                        Video = soumission.UrlVideo,
+                        Statut = "Validee"
+                    });
+                }
+                else
+                {
+                    reussite.Video = soumission.UrlVideo;
+                    reussite.Statut = "Validee";
+                }
+
+                dbContext.SoumissionsNiveaux.Remove(soumission);
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeCourante.Id,
+                    _connectedUtilisateurId,
+                    TypesActionHistoriqueListe.SoumissionAcceptee,
+                    $"La réussite de {utilisateur.Nom} pour {_niveauSelectionne.Nom} a été acceptée automatiquement.",
+                    HistoriqueListeService.CleSoumission(_listeCourante.Id, soumission.IdSoumission),
+                    new DecisionSoumissionHistorique(soumissionAvant, reussiteAvant),
+                    null);
+
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                Chargement.ClearCache(_listeCourante.Id);
+                _submissionSuccess = true;
+                _reussiteAccepteeAutomatiquement = true;
+                _soumissionExistante = null;
+                _newSubmission = new SoumissionNiveau();
+                _selectedNiveauIndex = -1;
+                _selectedUtilisateurIndex = -1;
+                _currentNiveauInput = string.Empty;
+                _niveauSelectionne = null;
+                if (!_isAuthenticated) _currentUtilisateurInput = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _submissionSuccess = false;
+                _errorMessage = Texte.Formater("ErreurMiseAJour", "Erreur lors de la mise à jour : {0}", ex.Message);
+            }
         }
 
         private async Task HandleValidSubmit()

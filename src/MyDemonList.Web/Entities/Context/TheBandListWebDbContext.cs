@@ -74,11 +74,21 @@ namespace MyDemonList.Web.Entities.Context
             modelBuilder.Entity<Liste>(e =>
             {
                 e.HasQueryFilter(x => !x.EstSupprimee);
+                e.ToTable(t =>
+                {
+                    t.HasCheckConstraint("CK_Listes_VideoTopStart", "\"VideoTopStart\" IS NULL OR \"VideoTopStart\" > 0");
+                    t.HasCheckConstraint("CK_Listes_CritereVideo", "\"VideoToujoursRequise\" OR \"VideoDifficulteMinimaleId\" IS NOT NULL OR \"VideoTopStart\" IS NOT NULL");
+                });
 
                 e.HasOne(x => x.Utilisateur)
                  .WithMany()
                  .HasForeignKey(x => x.UtilisateurId)
                  .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne<Difficulte>()
+                 .WithMany()
+                 .HasForeignKey(x => x.VideoDifficulteMinimaleId)
+                 .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<HistoriqueListe>(e =>
