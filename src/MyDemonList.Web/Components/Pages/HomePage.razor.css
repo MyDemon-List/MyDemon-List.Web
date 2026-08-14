@@ -9,6 +9,21 @@
     scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
+.section-archives {
+    margin-top: 28px;
+}
+
+.carte-liste--archive {
+    min-height: 190px;
+    border-color: rgba(255, 112, 132, .28);
+    background: linear-gradient(145deg, rgba(65, 32, 43, .92), rgba(29, 25, 35, .96));
+    cursor: pointer;
+}
+
+.carte-liste--archive .carte-contenu {
+    opacity: .86;
+}
+
 .accueil-page::-webkit-scrollbar {
     width: 6px;
     height: 6px;

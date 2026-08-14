@@ -18,6 +18,9 @@ namespace MyDemonList.Web.Entities
         public string? Description { get; set; }
         public DateTime DateCreation { get; set; } = DateTime.Now;
         public bool EstPublique { get; set; } = true;
+        public bool EstSupprimee { get; set; }
+        public DateTime? DateSuppression { get; set; }
+        public int? SupprimeeParUtilisateurId { get; set; }
         public string? DiscordServerUrl { get; set; }
 
         public RawFootageMode RawFootageMode { get; set; } = RawFootageMode.None;

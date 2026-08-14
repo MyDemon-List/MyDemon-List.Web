@@ -38,8 +38,19 @@ else
             }
         </header>
 
+        @if (_listeEstSupprimee)
+        {
+            <div class="liste-supprimee-banniere">
+                <div>
+                    <strong>Cette liste est supprimée</strong>
+                    <span>Elle n'est plus visible publiquement, mais toutes ses données sont conservées.</span>
+                </div>
+                <button type="button" class="btn-restaurer" @onclick="OuvrirRestaurationListe">Restaurer la liste</button>
+            </div>
+        }
+
         <nav class="onglets" aria-label="Navigation de gestion de la liste">
-            @if (PeutVoirOngletNiveaux)
+            @if (PeutVoirOngletNiveaux && !_listeEstSupprimee)
             {
                 <button type="button" class="onglet @(_ongletActuel == Onglet.Niveaux ? "active" : "")"
                         aria-pressed="@(_ongletActuel == Onglet.Niveaux)" @onclick="() => _ongletActuel = Onglet.Niveaux">
@@ -50,26 +61,36 @@ else
                     <span>Ajouter un niveau</span>
                 </button>
             }
-            <button type="button" class="onglet @(_ongletActuel == Onglet.Soumissions ? "active" : "")"
-                    aria-pressed="@(_ongletActuel == Onglet.Soumissions)" @onclick="() => _ongletActuel = Onglet.Soumissions">
-                <span>Soumissions</span>
-                @if (_soumissions.Count > 0)
-                {
-                    <span class="onglet-compteur">@_soumissions.Count</span>
-                }
-            </button>
-            @if (PeutVoirOngletModeration)
+            @if (!_listeEstSupprimee)
+            {
+                <button type="button" class="onglet @(_ongletActuel == Onglet.Soumissions ? "active" : "")"
+                        aria-pressed="@(_ongletActuel == Onglet.Soumissions)" @onclick="() => _ongletActuel = Onglet.Soumissions">
+                    <span>Soumissions</span>
+                    @if (_soumissions.Count > 0)
+                    {
+                        <span class="onglet-compteur">@_soumissions.Count</span>
+                    }
+                </button>
+            }
+            @if (PeutVoirOngletModeration && !_listeEstSupprimee)
             {
                 <button type="button" class="onglet @(_ongletActuel == Onglet.Moderation ? "active" : "")"
                         aria-pressed="@(_ongletActuel == Onglet.Moderation)" @onclick="() => _ongletActuel = Onglet.Moderation">
                     <span>Modération</span>
                 </button>
             }
-            @if (PeutVoirOngletParametres)
+            @if (PeutVoirOngletParametres && !_listeEstSupprimee)
             {
                 <button type="button" class="onglet @(_ongletActuel == Onglet.Parametres ? "active" : "")"
                         aria-pressed="@(_ongletActuel == Onglet.Parametres)" @onclick="() => _ongletActuel = Onglet.Parametres">
                     <span>Paramètres</span>
+                </button>
+            }
+            @if (PeutVoirOngletHistorique)
+            {
+                <button type="button" class="onglet @(_ongletActuel == Onglet.Historique ? "active" : "")"
+                        aria-pressed="@(_ongletActuel == Onglet.Historique)" @onclick="() => _ongletActuel = Onglet.Historique">
+                    <span>Historique</span>
                 </button>
             }
         </nav>
@@ -661,6 +682,14 @@ else
                         </button>
                         <button type="button" class="btn-secondaire" @onclick="() => _ongletActuel = Onglet.Niveaux">Annuler</button>
                     </div>
+
+                    <section class="zone-danger">
+                        <div>
+                            <h3>Supprimer la liste</h3>
+                            <p>La liste disparaîtra du site, mais vous pourrez la restaurer depuis son historique.</p>
+                        </div>
+                        <button type="button" class="btn-danger" @onclick="OuvrirSuppressionListe">Supprimer la liste</button>
+                    </section>
                 </div>
             </EditForm>
         }
@@ -862,6 +891,109 @@ else
                 </section>
             </div>
         }
+        else if (_ongletActuel == Onglet.Historique && PeutVoirOngletHistorique)
+        {
+            <section class="historique-page">
+                <header class="historique-entete">
+                    <div>
+                        <h2>Historique de la liste</h2>
+                        <p>Consultez les actions correspondant à vos permissions et annulez celles que votre rôle vous autorise à gérer.</p>
+                    </div>
+                    <span class="historique-compteur">@_historiques.Count actions</span>
+                </header>
+
+                @if (!string.IsNullOrWhiteSpace(_historiqueSucces))
+                {
+                    <div class="alert alert-success">@_historiqueSucces</div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_historiqueErreur))
+                {
+                    <div class="alert alert-error">@_historiqueErreur</div>
+                }
+
+                @if (_historiques.Count == 0)
+                {
+                    <div class="historique-vide">
+                        <strong>Aucune action enregistrée</strong>
+                        <span>Les prochaines modifications apparaîtront ici.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="historique-liste">
+                        @foreach (HistoriqueListe historique in _historiques)
+                        {
+                            <article class="historique-action @(historique.DateAnnulation is not null ? "annulee" : "")">
+                                <div class="historique-avatar" aria-hidden="true">@InitialeAuteur(historique)</div>
+                                <div class="historique-contenu">
+                                    <div class="historique-ligne-haut">
+                                        <span class="historique-type">@LibelleAction(historique.TypeAction)</span>
+                                        <time datetime="@historique.DateCreation.ToString("O")">@historique.DateCreation.ToString("dd/MM/yyyy à HH:mm")</time>
+                                    </div>
+                                    <p>@historique.Description</p>
+                                    <span class="historique-auteur">par @(historique.Utilisateur?.Nom ?? "Système")</span>
+                                    @if (historique.DateAnnulation is not null)
+                                    {
+                                        <span class="historique-statut">Annulée par @(historique.AnnuleeParUtilisateur?.Nom ?? "le propriétaire")</span>
+                                    }
+                                </div>
+                                @if (PeutAnnulerMaintenant(historique))
+                                {
+                                    <button type="button" class="historique-annuler" @onclick="() => OuvrirAnnulation(historique)">Annuler</button>
+                                }
+                                else if (PeutAnnulerSelonRole(historique) && historique.PeutEtreAnnulee && historique.DateAnnulation is null)
+                                {
+                                    <span class="historique-verrouillee">Action plus récente à annuler d'abord</span>
+                                }
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
+        }
       </div>
     </div>
+
+    @if (_afficherConfirmationSuppressionListe)
+    {
+        <div class="modal-backdrop" @onclick="FermerSuppressionListe"></div>
+        <div class="modal-confirm modal-liste-danger" role="dialog" aria-modal="true" aria-labelledby="suppression-liste-titre">
+            <h2 id="suppression-liste-titre">Supprimer @_listeNom ?</h2>
+            <p>La liste sera masquée immédiatement. Son historique et toutes ses données seront conservés pour permettre une restauration.</p>
+            <label for="confirmation-nom-liste">Saisissez <strong>@_listeNom</strong> pour confirmer</label>
+            <input id="confirmation-nom-liste" class="input" autocomplete="off" @bind="_confirmationNomListe" @bind:event="oninput" />
+            <div class="modal-actions">
+                <button type="button" class="btn-danger" disabled="@(!NomListeConfirme || _actionHistoriqueEnCours)" @onclick="SupprimerListe">@(_actionHistoriqueEnCours ? "Suppression..." : "Supprimer définitivement de l'affichage")</button>
+                <button type="button" disabled="@_actionHistoriqueEnCours" @onclick="FermerSuppressionListe">Annuler</button>
+            </div>
+        </div>
+    }
+
+    @if (_afficherConfirmationRestaurationListe)
+    {
+        <div class="modal-backdrop" @onclick="FermerRestaurationListe"></div>
+        <div class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="restauration-liste-titre">
+            <h2 id="restauration-liste-titre">Restaurer la liste ?</h2>
+            <p>Elle redeviendra accessible avec ses niveaux, ses membres et ses réglages.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn" disabled="@_actionHistoriqueEnCours" @onclick="RestaurerListe">@(_actionHistoriqueEnCours ? "Restauration..." : "Restaurer")</button>
+                <button type="button" disabled="@_actionHistoriqueEnCours" @onclick="FermerRestaurationListe">Annuler</button>
+            </div>
+        </div>
+    }
+
+    @if (_afficherConfirmationAnnulation && _historiqueAAnnuler is not null)
+    {
+        <div class="modal-backdrop" @onclick="FermerAnnulation"></div>
+        <div class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="annulation-action-titre">
+            <h2 id="annulation-action-titre">Annuler cette action ?</h2>
+            <p>@_historiqueAAnnuler.Description</p>
+            <p>Les données seront remises dans leur état précédent.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-danger" disabled="@_actionHistoriqueEnCours" @onclick="AnnulerAction">@(_actionHistoriqueEnCours ? "Annulation..." : "Confirmer l'annulation")</button>
+                <button type="button" disabled="@_actionHistoriqueEnCours" @onclick="FermerAnnulation">Retour</button>
+            </div>
+        </div>
+    }
 }

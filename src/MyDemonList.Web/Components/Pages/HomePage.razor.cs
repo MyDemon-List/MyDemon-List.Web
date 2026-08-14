@@ -35,6 +35,7 @@ namespace MyDemonList.Web.Components.Pages
         private List<Liste> _listesPubliques = [];
         private List<Liste> _listesPossedees = [];
         private List<Liste> _listesGerees = [];
+        private List<Liste> _listesSupprimees = [];
         private Dictionary<int, int> _nombreNiveauxParListe = [];
         private Dictionary<int, RoleListe> _rolesParListe = [];
         private HashSet<int> _listesAvecFond = [];
@@ -93,6 +94,7 @@ namespace MyDemonList.Web.Components.Pages
         {
             _isLoading = true;
             _listesGerees = [];
+            _listesSupprimees = [];
 
             using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(DbContextOptions);
 
@@ -113,6 +115,16 @@ namespace MyDemonList.Web.Components.Pages
                 : [];
 
             _nombreListesPossedees = _listesPossedees.Count;
+
+            if (_utilisateurId is int uidArchives)
+            {
+                _listesSupprimees = await dbContext.Listes
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .Where(l => l.UtilisateurId == uidArchives && l.EstSupprimee)
+                    .OrderByDescending(l => l.DateSuppression)
+                    .ToListAsync();
+            }
 
             if (_utilisateurId is int uidQuota)
             {
@@ -201,6 +213,13 @@ namespace MyDemonList.Web.Components.Pages
             NavigationManager.NavigateTo(SeoUtils.LocaliserChemin(url, Texte.CodeLangue));
         }
 
+        private void OuvrirHistoriqueListe(Liste liste)
+        {
+            ListeSession.SetListe(liste.Id, liste.Nom, liste.DiscordServerUrl);
+            string url = $"{SeoUtils.CheminGestion(liste.Id, liste.Nom)}?onglet=historique";
+            NavigationManager.NavigateTo(SeoUtils.LocaliserChemin(url, Texte.CodeLangue));
+        }
+
         private async Task DemanderAugmentationListes()
         {
             if (_utilisateurId is not int uid || PeutCreerListeSansDemande || _demandeListesEnCours || CooldownRestantListes is not null)
@@ -259,6 +278,17 @@ namespace MyDemonList.Web.Components.Pages
                 };
 
                 dbContext.Listes.Add(liste);
+                await dbContext.SaveChangesAsync();
+
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    liste.Id,
+                    uid,
+                    TypesActionHistoriqueListe.ListeCreee,
+                    $"La liste {liste.Nom} a été créée.",
+                    HistoriqueListeService.CleSuppression(liste.Id),
+                    null,
+                    HistoriqueListeService.CapturerSuppression(liste));
                 await dbContext.SaveChangesAsync();
 
                 _nouveauNom = string.Empty;

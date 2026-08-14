@@ -578,6 +578,18 @@ namespace MyDemonList.Web.Components.Pages
                     dbContext.SoumissionsNiveaux.Add(_newSubmission);
                     await dbContext.SaveChangesAsync();
 
+                    SoumissionHistorique soumissionCreee = HistoriqueListeService.CapturerSoumission(_newSubmission);
+                    HistoriqueListeService.Ajouter(
+                        dbContext,
+                        _listeCourante.Id,
+                        _connectedUtilisateurId,
+                        TypesActionHistoriqueListe.SoumissionCreee,
+                        $"{_newSubmission.NomUtilisateur} a soumis une réussite pour {_niveauSelectionne?.Nom ?? "un niveau"}.",
+                        HistoriqueListeService.CleSoumission(_listeCourante.Id, _newSubmission.IdSoumission),
+                        null,
+                        soumissionCreee);
+                    await dbContext.SaveChangesAsync();
+
                     _newSubmission = new SoumissionNiveau();
                     _submissionSuccess = true;
                 }
@@ -612,10 +624,21 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (soumission is not null)
                 {
+                    SoumissionHistorique avant = HistoriqueListeService.CapturerSoumission(soumission);
                     soumission.UrlVideo = _newSubmission.UrlVideo;
                     soumission.RawFootageUrl = _newSubmission.RawFootageUrl;
                     soumission.DateSoumission = DateTime.Now;
                     soumission.UtilisateurId = _isAuthenticated ? _connectedUtilisateurId : soumission.UtilisateurId;
+                    SoumissionHistorique apres = HistoriqueListeService.CapturerSoumission(soumission);
+                    HistoriqueListeService.Ajouter(
+                        dbContext,
+                        _listeCourante.Id,
+                        _connectedUtilisateurId,
+                        TypesActionHistoriqueListe.SoumissionModifiee,
+                        $"{soumission.NomUtilisateur} a modifié sa soumission pour {_niveauSelectionne?.Nom ?? "un niveau"}.",
+                        HistoriqueListeService.CleSoumission(_listeCourante.Id, soumission.IdSoumission),
+                        avant,
+                        apres);
                     await dbContext.SaveChangesAsync();
                 }
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
+using MyDemonList.Web.Services;
 using MyDemonList.Web.Utils;
 
 namespace MyDemonList.Web.Components.Pages
@@ -194,6 +195,10 @@ namespace MyDemonList.Web.Components.Pages
                 MembreListe? existant = await dbContext.MembresListe
                     .FirstOrDefaultAsync(m => m.ListeId == _listeId && m.UtilisateurId == candidat.UtilisateurId);
 
+                MembreListeHistorique? avant = existant is null
+                    ? null
+                    : new MembreListeHistorique(existant.UtilisateurId, existant.Role);
+
                 if (existant is not null)
                 {
                     if (!PeutRevoquerRole(existant.Role))
@@ -221,6 +226,18 @@ namespace MyDemonList.Web.Components.Pages
                     "Accès à une liste",
                     $"Le rôle {NomRole(_roleAAssigner)} vous a été attribué sur {_listeNom}.",
                     SeoUtils.CheminGestion(_listeId, _listeNom));
+
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeId,
+                    _utilisateurId,
+                    avant is null ? TypesActionHistoriqueListe.MembreAjoute : TypesActionHistoriqueListe.RoleModifie,
+                    avant is null
+                        ? $"{candidat.NomSite} a été ajouté avec le rôle {NomRole(_roleAAssigner)}."
+                        : $"Le rôle de {candidat.NomSite} a été remplacé par {NomRole(_roleAAssigner)}.",
+                    HistoriqueListeService.CleMembre(_listeId, candidat.UtilisateurId),
+                    avant,
+                    new MembreListeHistorique(candidat.UtilisateurId, _roleAAssigner));
 
                 await dbContext.SaveChangesAsync();
                 NotificationService.Signaler(candidat.UtilisateurId);
@@ -262,6 +279,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (existant is not null)
                 {
+                    MembreListeHistorique avant = new(existant.UtilisateurId, existant.Role);
                     existant.Role = nouveauRole;
                     MyDemonList.Web.Services.NotificationService.Ajouter(
                         dbContext,
@@ -270,6 +288,15 @@ namespace MyDemonList.Web.Components.Pages
                         "Rôle modifié",
                         $"Votre rôle sur {_listeNom} est maintenant {NomRole(nouveauRole)}.",
                         SeoUtils.CheminGestion(_listeId, _listeNom));
+                    HistoriqueListeService.Ajouter(
+                        dbContext,
+                        _listeId,
+                        _utilisateurId,
+                        TypesActionHistoriqueListe.RoleModifie,
+                        $"Le rôle de {membre.NomSite} est passé de {NomRole(avant.Role)} à {NomRole(nouveauRole)}.",
+                        HistoriqueListeService.CleMembre(_listeId, membre.UtilisateurId),
+                        avant,
+                        new MembreListeHistorique(membre.UtilisateurId, nouveauRole));
                     await dbContext.SaveChangesAsync();
                     NotificationService.Signaler(membre.UtilisateurId);
                 }
@@ -317,6 +344,7 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (existant is not null)
                 {
+                    MembreListeHistorique avant = new(existant.UtilisateurId, existant.Role);
                     dbContext.MembresListe.Remove(existant);
                     MyDemonList.Web.Services.NotificationService.Ajouter(
                         dbContext,
@@ -324,6 +352,15 @@ namespace MyDemonList.Web.Components.Pages
                         TypesNotification.RoleModifie,
                         "Accès à une liste retiré",
                         $"Votre rôle sur {_listeNom} a été retiré.");
+                    HistoriqueListeService.Ajouter(
+                        dbContext,
+                        _listeId,
+                        _utilisateurId,
+                        TypesActionHistoriqueListe.MembreRetire,
+                        $"{membre.NomSite} a été retiré de la liste.",
+                        HistoriqueListeService.CleMembre(_listeId, membre.UtilisateurId),
+                        avant,
+                        null);
                     await dbContext.SaveChangesAsync();
                     NotificationService.Signaler(membre.UtilisateurId);
                 }

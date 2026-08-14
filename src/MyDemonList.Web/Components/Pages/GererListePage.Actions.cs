@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
+using MyDemonList.Web.Services;
 using MyDemonList.Web.Utils;
 
 namespace MyDemonList.Web.Components.Pages
@@ -73,6 +74,10 @@ namespace MyDemonList.Web.Components.Pages
                 using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(DbContextOptions);
                 await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync();
 
+                Dictionary<int, int> positionsAvant = await dbContext.Classements
+                    .Where(c => c.ListeId == _listeId)
+                    .ToDictionaryAsync(c => c.Id, c => c.ClassementPosition);
+
                 Classement courant = await dbContext.Classements.FirstAsync(c => c.Id == classementId);
                 Classement? voisin = await dbContext.Classements
                     .FirstOrDefaultAsync(c => c.ListeId == courant.ListeId && c.ClassementPosition == courant.ClassementPosition + direction);
@@ -101,6 +106,25 @@ namespace MyDemonList.Web.Components.Pages
                 await dbContext.SaveChangesAsync();
 
                 await RecalculerPointsListeAsync(dbContext, courant.ListeId);
+
+                Dictionary<int, int> positionsApres = await dbContext.Classements
+                    .Where(c => c.ListeId == _listeId)
+                    .ToDictionaryAsync(c => c.Id, c => c.ClassementPosition);
+                string nomNiveau = await dbContext.Niveaux
+                    .Where(n => n.Id == courant.NiveauId)
+                    .Select(n => n.Nom)
+                    .FirstAsync();
+
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeId,
+                    _utilisateurId,
+                    TypesActionHistoriqueListe.ClassementModifie,
+                    $"Le niveau {nomNiveau} a été déplacé de la position {posCourant} à la position {posVoisin}.",
+                    HistoriqueListeService.CleNiveaux(_listeId),
+                    positionsAvant,
+                    positionsApres);
+                await dbContext.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
@@ -138,6 +162,10 @@ namespace MyDemonList.Web.Components.Pages
             {
                 using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(DbContextOptions);
                 await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync();
+
+                Dictionary<int, int> positionsAvant = await dbContext.Classements
+                    .Where(c => c.ListeId == _listeId)
+                    .ToDictionaryAsync(c => c.Id, c => c.ClassementPosition);
 
                 Classement courant = await dbContext.Classements.FirstAsync(c => c.Id == classementId);
 
@@ -182,6 +210,25 @@ namespace MyDemonList.Web.Components.Pages
 
                 await RecalculerPointsListeAsync(dbContext, courant.ListeId);
 
+                Dictionary<int, int> positionsApres = await dbContext.Classements
+                    .Where(c => c.ListeId == _listeId)
+                    .ToDictionaryAsync(c => c.Id, c => c.ClassementPosition);
+                string nomNiveau = await dbContext.Niveaux
+                    .Where(n => n.Id == courant.NiveauId)
+                    .Select(n => n.Nom)
+                    .FirstAsync();
+
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeId,
+                    _utilisateurId,
+                    TypesActionHistoriqueListe.ClassementModifie,
+                    $"Le niveau {nomNiveau} a été déplacé de la position {positionActuelle} à la position {positionCible}.",
+                    HistoriqueListeService.CleNiveaux(_listeId),
+                    positionsAvant,
+                    positionsApres);
+                await dbContext.SaveChangesAsync();
+
                 await transaction.CommitAsync();
 
                 Chargement.ClearCache(_listeId);
@@ -215,11 +262,24 @@ namespace MyDemonList.Web.Components.Pages
 
             using (MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(DbContextOptions))
             {
+                await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync();
                 Niveau? niveau = await dbContext.Niveaux.FirstOrDefaultAsync(n => n.Id == id);
                 if (niveau is not null)
                 {
+                    NiveauHistorique? avant = await HistoriqueListeService.CapturerNiveauAsync(dbContext, niveau.Id);
+                    string nomNiveau = niveau.Nom;
                     dbContext.Niveaux.Remove(niveau);
                     await dbContext.SaveChangesAsync();
+
+                    HistoriqueListeService.Ajouter(
+                        dbContext,
+                        _listeId,
+                        _utilisateurId,
+                        TypesActionHistoriqueListe.NiveauSupprime,
+                        $"Le niveau {nomNiveau} a été supprimé.",
+                        HistoriqueListeService.CleNiveaux(_listeId),
+                        avant,
+                        null);
                 }
 
                 List<Classement> restants = await dbContext.Classements
@@ -234,6 +294,8 @@ namespace MyDemonList.Web.Components.Pages
                 await dbContext.SaveChangesAsync();
 
                 await RecalculerPointsListeAsync(dbContext, _listeId);
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
             }
 
             Chargement.ClearCache(_listeId);
