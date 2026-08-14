@@ -291,11 +291,13 @@ namespace MyDemonList.Web.Components.Pages
             {
                 Task<GdBrowserLevelInfo?> infoTask = GdBrowserService.ObtenirNiveauAsync(_formIdDuNiveauDansLeJeu, ct);
                 Task<MiniatureNiveauResultat?> miniatureTask = LevelThumbnailService.ObtenirMiniatureAsync(_formIdDuNiveauDansLeJeu, ct);
+                Task<int?> dureeTask = GeometryDashDurationService.ObtenirDureeAsync(_formIdDuNiveauDansLeJeu, ct);
 
-                await Task.WhenAll(infoTask, miniatureTask);
+                await Task.WhenAll(infoTask, miniatureTask, dureeTask);
 
                 GdBrowserLevelInfo? info = infoTask.Result;
                 MiniatureNiveauResultat? miniature = miniatureTask.Result;
+                int? duree = dureeTask.Result;
 
                 if (info is null)
                 {
@@ -338,6 +340,12 @@ namespace MyDemonList.Web.Components.Pages
 
                         if (correspondance is not null)
                             _formRatingId = correspondance.Id;
+                    }
+
+                    if (duree is int dureeSecondes)
+                    {
+                        _formDureeMinutes = dureeSecondes / 60;
+                        _formDureeSecondes = dureeSecondes % 60;
                     }
                 }
 

@@ -45,6 +45,9 @@ namespace MyDemonList.Web.Components.Pages
         private GdBrowserService GdBrowserService { get; set; } = default!;
 
         [Inject]
+        private GeometryDashDurationService GeometryDashDurationService { get; set; } = default!;
+
+        [Inject]
         private LevelThumbnailService LevelThumbnailService { get; set; } = default!;
 
         [Inject]
