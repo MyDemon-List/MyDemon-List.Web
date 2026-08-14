@@ -1,7 +1,4 @@
--- Données d'exemple pour le développement local uniquement (extraites d'un export réel, sans les infos sensibles :
--- pas de comptes Discord, pas de fusions d'utilisateurs).
--- Montées uniquement par docker-compose.yml (jamais par docker-compose.prod.yml).
-BEGIN;
+BEGIN TRANSACTION;
 
 INSERT INTO public."Utilisateurs" ("Id", "Nom") VALUES
     (1, 'Sao'),
