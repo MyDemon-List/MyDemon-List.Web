@@ -301,9 +301,9 @@ namespace MyDemonList.Web.Services
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(l => l.Id == listeId);
 
-            if (liste is null) return (false, "Liste introuvable.");
-            if (liste.UtilisateurId != utilisateurId) return (false, "Seul le propriétaire peut supprimer cette liste.");
-            if (liste.EstSupprimee) return (false, "Cette liste est déjà supprimée.");
+            if (liste is null) return (false, "ListeIntrouvable");
+            if (liste.UtilisateurId != utilisateurId) return (false, "SuppressionListeReserveeProprietaire");
+            if (liste.EstSupprimee) return (false, "ListeDejaSupprimee");
 
             EtatSuppressionListeHistorique avant = CapturerSuppression(liste);
             liste.EstSupprimee = true;
@@ -323,7 +323,7 @@ namespace MyDemonList.Web.Services
 
             await dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
-            return (true, "La liste a été supprimée et peut être restaurée.");
+            return (true, "ListeSupprimeeSucces");
         }
 
         public async Task<(bool Succes, string Message)> RestaurerListeAsync(int listeId, int utilisateurId)
@@ -335,9 +335,9 @@ namespace MyDemonList.Web.Services
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(l => l.Id == listeId);
 
-            if (liste is null) return (false, "Liste introuvable.");
-            if (liste.UtilisateurId != utilisateurId) return (false, "Seul le propriétaire peut restaurer cette liste.");
-            if (!liste.EstSupprimee) return (false, "Cette liste est déjà active.");
+            if (liste is null) return (false, "ListeIntrouvable");
+            if (liste.UtilisateurId != utilisateurId) return (false, "RestaurationListeReserveeProprietaire");
+            if (!liste.EstSupprimee) return (false, "ListeDejaActive");
 
             EtatSuppressionListeHistorique avant = CapturerSuppression(liste);
             liste.EstSupprimee = false;
@@ -357,7 +357,7 @@ namespace MyDemonList.Web.Services
 
             await dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
-            return (true, "La liste a été restaurée.");
+            return (true, "ListeRestaureeSucces");
         }
 
         public async Task<(bool Succes, string Message)> AnnulerAsync(int historiqueId, int utilisateurId)
@@ -368,17 +368,17 @@ namespace MyDemonList.Web.Services
             HistoriqueListe? historique = await dbContext.HistoriquesListes
                 .FirstOrDefaultAsync(h => h.Id == historiqueId);
 
-            if (historique is null) return (false, "Action introuvable.");
+            if (historique is null) return (false, "ActionIntrouvable");
 
             Liste? liste = await dbContext.Listes
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(l => l.Id == historique.ListeId);
 
-            if (liste is null) return (false, "Liste introuvable.");
+            if (liste is null) return (false, "ListeIntrouvable");
             if (liste.UtilisateurId != utilisateurId)
             {
                 if (liste.EstSupprimee)
-                    return (false, "Seul le propriétaire peut modifier l'historique d'une liste supprimée.");
+                    return (false, "HistoriqueListeSupprimeeReserveProprietaire");
 
                 RoleListe? role = await dbContext.MembresListe
                     .AsNoTracking()
@@ -387,10 +387,10 @@ namespace MyDemonList.Web.Services
                     .FirstOrDefaultAsync();
 
                 if (role is null || !PeutAnnulerAvecRole(role.Value, historique))
-                    return (false, "Vous n'avez pas la permission d'annuler cette action.");
+                    return (false, "PermissionAnnulerActionRefusee");
             }
-            if (!historique.PeutEtreAnnulee) return (false, "Cette action ne peut pas être annulée.");
-            if (historique.DateAnnulation is not null) return (false, "Cette action a déjà été annulée.");
+            if (!historique.PeutEtreAnnulee) return (false, "ActionNonAnnulable");
+            if (historique.DateAnnulation is not null) return (false, "ActionDejaAnnulee");
 
             if (!string.IsNullOrWhiteSpace(historique.CleCible))
             {
@@ -401,7 +401,7 @@ namespace MyDemonList.Web.Services
                     h.DateAnnulation == null);
 
                 if (actionPlusRecente)
-                    return (false, "Annulez d'abord les actions plus récentes qui concernent le même élément.");
+                    return (false, "ActionRecenteDabord");
             }
 
             (bool succes, string message) = await AppliquerAnnulationAsync(dbContext, historique, liste);
@@ -423,7 +423,7 @@ namespace MyDemonList.Web.Services
 
             await dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
-            return (true, "L'action a été annulée.");
+            return (true, "ActionAnnuleeSucces");
         }
 
         private static async Task<(bool Succes, string Message)> AppliquerAnnulationAsync(
@@ -480,7 +480,7 @@ namespace MyDemonList.Web.Services
                     SoumissionNiveau? soumissionActuelle = await dbContext.SoumissionsNiveaux
                         .FirstOrDefaultAsync(s => s.IdSoumission == soumissionCreee.IdSoumission);
                     if (soumissionActuelle is null)
-                        return (false, "Cette soumission n'est plus en attente.");
+                        return (false, "SoumissionPlusEnAttente");
                     dbContext.SoumissionsNiveaux.Remove(soumissionActuelle);
                     return (true, string.Empty);
 
@@ -489,7 +489,7 @@ namespace MyDemonList.Web.Services
                     SoumissionNiveau? soumissionAModifier = await dbContext.SoumissionsNiveaux
                         .FirstOrDefaultAsync(s => s.IdSoumission == soumissionAvant.IdSoumission);
                     if (soumissionAModifier is null)
-                        return (false, "Cette soumission n'est plus en attente.");
+                        return (false, "SoumissionPlusEnAttente");
                     AppliquerSoumission(soumissionAModifier, soumissionAvant);
                     return (true, string.Empty);
 
@@ -502,7 +502,7 @@ namespace MyDemonList.Web.Services
                     return (true, string.Empty);
 
                 default:
-                    return (false, "Le type de cette action n'est pas pris en charge pour l'annulation.");
+                    return (false, "TypeActionNonPrisEnCharge");
             }
         }
 
@@ -511,12 +511,12 @@ namespace MyDemonList.Web.Services
             NiveauHistorique snapshot)
         {
             Niveau? niveau = await dbContext.Niveaux.FirstOrDefaultAsync(n => n.Id == snapshot.Id);
-            if (niveau is null) return (false, "Le niveau n'existe plus.");
+            if (niveau is null) return (false, "NiveauExistePlus");
 
             bool aDesReussites = await dbContext.ReussitesNiveaux.AnyAsync(r => r.NiveauId == snapshot.Id);
             bool aDesSoumissions = await dbContext.SoumissionsNiveaux.AnyAsync(s => s.NiveauId == snapshot.Id);
             if (aDesReussites || aDesSoumissions)
-                return (false, "Ce niveau possède désormais des réussites ou des soumissions et ne peut plus être retiré automatiquement.");
+                return (false, "NiveauDependancesNonRetirable");
 
             dbContext.Niveaux.Remove(niveau);
             await dbContext.SaveChangesAsync();
@@ -627,7 +627,7 @@ namespace MyDemonList.Web.Services
                 .ToListAsync();
 
             if (positions.Count != classements.Count || positions.Keys.Any(id => classements.All(c => c.Id != id)))
-                return (false, "Le classement a changé et ne peut plus être restauré automatiquement.");
+                return (false, "ClassementChangeNonRestaurable");
 
             foreach (Classement classement in classements)
                 classement.ClassementPosition = -1_000_000 - classement.Id;
@@ -649,7 +649,7 @@ namespace MyDemonList.Web.Services
         {
             int? utilisateurId = decision.Soumission.UtilisateurId;
             if (utilisateurId is null)
-                return (false, "La soumission n'était pas reliée à un utilisateur et ne peut pas être restaurée automatiquement.");
+                return (false, "SoumissionUtilisateurAbsentNonRestaurable");
 
             ReussiteNiveau? reussite = await dbContext.ReussitesNiveaux.FirstOrDefaultAsync(r =>
                 r.NiveauId == decision.Soumission.NiveauId && r.UtilisateurId == utilisateurId.Value);

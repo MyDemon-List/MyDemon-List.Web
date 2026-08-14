@@ -92,7 +92,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (_candidatAdminSelectionne is not DiscordUtilisateurSuggestion candidat)
             {
-                _adminsErreur = "Veuillez sélectionner un utilisateur relié à Discord dans la liste de suggestions.";
+                _adminsErreur = Texte["SelectionUtilisateurDiscordRequise", "Veuillez sélectionner un utilisateur relié à Discord dans la liste de suggestions."];
                 return;
             }
 
