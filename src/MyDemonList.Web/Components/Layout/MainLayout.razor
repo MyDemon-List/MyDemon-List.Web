@@ -1,7 +1,8 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @inherits LayoutComponentBase
+@inject Traductions Texte
 
-<a class="skip-link" href="#contenu-principal">Aller au contenu</a>
+<a class="skip-link" href="#contenu-principal">@Texte["AllerContenu", "Aller au contenu"]</a>
 <header>
     <CascadingAuthenticationState>
         <NavMenu />

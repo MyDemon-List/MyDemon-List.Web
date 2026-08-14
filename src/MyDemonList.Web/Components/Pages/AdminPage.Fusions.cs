@@ -42,16 +42,16 @@ namespace MyDemonList.Web.Components.Pages
             _fusionsEnAttente = resultat;
         }
 
-        private static string ResumeActiviteFusion(FusionService.InfosCompteFusion info)
+        private string ResumeActiviteFusion(FusionService.InfosCompteFusion info)
         {
             List<string> parties = [];
-            if (info.NombreReussitesValidees > 0) parties.Add($"{info.NombreReussitesValidees} réussite(s)");
-            if (info.NombreListesPossedees > 0) parties.Add($"{info.NombreListesPossedees} liste(s) possédée(s)");
-            if (info.NombreNiveauxPublies > 0) parties.Add($"{info.NombreNiveauxPublies} niveau(x) publié(s)");
-            if (info.NombreNiveauxVerifies > 0) parties.Add($"{info.NombreNiveauxVerifies} niveau(x) vérifié(s)");
-            if (info.NombreNiveauxCrees > 0) parties.Add($"{info.NombreNiveauxCrees} niveau(x) créé(s)");
+            if (info.NombreReussitesValidees > 0) parties.Add(Texte.Formater("ReussitesResume", "{0} réussite(s)", info.NombreReussitesValidees));
+            if (info.NombreListesPossedees > 0) parties.Add(Texte.Formater("ListesPossedeesResume", "{0} liste(s) possédée(s)", info.NombreListesPossedees));
+            if (info.NombreNiveauxPublies > 0) parties.Add(Texte.Formater("NiveauxPubliesResume", "{0} niveau(x) publié(s)", info.NombreNiveauxPublies));
+            if (info.NombreNiveauxVerifies > 0) parties.Add(Texte.Formater("NiveauxVerifiesResume", "{0} niveau(x) vérifié(s)", info.NombreNiveauxVerifies));
+            if (info.NombreNiveauxCrees > 0) parties.Add(Texte.Formater("NiveauxCreesResume", "{0} niveau(x) créé(s)", info.NombreNiveauxCrees));
 
-            return parties.Count > 0 ? string.Join(", ", parties) : "Aucune activité sur le site";
+            return parties.Count > 0 ? string.Join(", ", parties) : Texte["AucuneActiviteSite", "Aucune activité sur le site"];
         }
 
         private bool EstImpliqueDansFusion(FusionAffichage demande) =>
@@ -63,7 +63,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (EstImpliqueDansFusion(demande))
             {
-                _fusionMessage = "Vous êtes concerné par cette demande de fusion, un autre admin du site doit la traiter.";
+                _fusionMessage = Texte["FusionAdminConcerne", "Vous êtes concerné par cette demande de fusion, un autre admin du site doit la traiter."];
                 return;
             }
 
@@ -80,7 +80,7 @@ namespace MyDemonList.Web.Components.Pages
 
             if (EstImpliqueDansFusion(demande))
             {
-                _fusionMessage = "Vous êtes concerné par cette demande de fusion, un autre admin du site doit la traiter.";
+                _fusionMessage = Texte["FusionAdminConcerne", "Vous êtes concerné par cette demande de fusion, un autre admin du site doit la traiter."];
                 return;
             }
 

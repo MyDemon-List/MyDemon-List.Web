@@ -85,7 +85,7 @@ namespace MyDemonList.Web.Components.Pages
             if (_notificationPourTous && !_estChef)
             {
                 _notificationPourTous = false;
-                _notificationAdminMessage = "Seul le super-administrateur peut envoyer une notification à tous les utilisateurs.";
+                _notificationAdminMessage = Texte["NotificationTousReserveeChef", "Seul le super-administrateur peut envoyer une notification à tous les utilisateurs."];
                 return;
             }
 
@@ -96,25 +96,25 @@ namespace MyDemonList.Web.Components.Pages
 
             if (titre.Length is < 3 or > 160)
             {
-                _notificationAdminMessage = "Le titre doit contenir entre 3 et 160 caractères.";
+                _notificationAdminMessage = Texte["TitreNotificationInvalide", "Le titre doit contenir entre 3 et 160 caractères."];
                 return;
             }
 
             if (message.Length is < 3 or > 2000)
             {
-                _notificationAdminMessage = "Le message doit contenir entre 3 et 2 000 caractères.";
+                _notificationAdminMessage = Texte["MessageNotificationInvalide", "Le message doit contenir entre 3 et 2 000 caractères."];
                 return;
             }
 
             if (lien is not null && (!lien.StartsWith('/') || lien.StartsWith("//", StringComparison.Ordinal)))
             {
-                _notificationAdminMessage = "Le lien doit être un chemin interne commençant par /, par exemple /profil.";
+                _notificationAdminMessage = Texte["LienNotificationInvalide", "Le lien doit être un chemin interne commençant par /, par exemple /profil."];
                 return;
             }
 
             if (!_notificationPourTous && _destinataireNotification is null)
             {
-                _notificationAdminMessage = "Sélectionnez un destinataire dans les propositions.";
+                _notificationAdminMessage = Texte["DestinataireRequis", "Sélectionnez un destinataire dans les propositions."];
                 return;
             }
 
@@ -125,12 +125,12 @@ namespace MyDemonList.Web.Components.Pages
                 if (_notificationPourTous)
                 {
                     int nombre = await NotificationService.EnvoyerATousAsync(titre, message, lien);
-                    _notificationAdminMessage = $"Notification envoyée à {nombre} utilisateur(s).";
+                    _notificationAdminMessage = Texte.Formater("NotificationEnvoyeePlusieurs", "Notification envoyée à {0} utilisateur(s).", nombre);
                 }
                 else if (_destinataireNotification is DestinataireNotification destinataire)
                 {
                     await NotificationService.EnvoyerAsync(destinataire.UtilisateurId, titre, message, lien);
-                    _notificationAdminMessage = $"Notification envoyée à {destinataire.NomSite}.";
+                    _notificationAdminMessage = Texte.Formater("NotificationEnvoyee", "Notification envoyée à {0}.", destinataire.NomSite);
                 }
 
                 _titreNotification = string.Empty;

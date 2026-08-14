@@ -59,6 +59,17 @@ builder.Services.AddHttpClient<GdBrowserService>(client =>
     client.BaseAddress = new Uri("https://gdbrowser.com/api/");
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpClient("GeometryDashServer", client =>
+{
+    client.BaseAddress = new Uri("https://www.boomlings.com/database/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+builder.Services.AddHttpClient("GeometryDashHistory", client =>
+{
+    client.BaseAddress = new Uri("https://history.geometrydash.eu/");
+    client.Timeout = TimeSpan.FromSeconds(12);
+});
+builder.Services.AddScoped<GeometryDashDurationService>();
 builder.Services.AddHttpClient<LevelThumbnailService>(client =>
 {
     client.BaseAddress = new Uri("https://levelthumbs.prevter.me/");
