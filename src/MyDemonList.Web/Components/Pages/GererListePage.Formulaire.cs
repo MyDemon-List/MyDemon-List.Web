@@ -532,6 +532,10 @@ namespace MyDemonList.Web.Components.Pages
             {
                 using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(DbContextOptions);
 
+                NiveauHistorique? etatAvant = _niveauEnEditionId is int niveauAvantId
+                    ? await HistoriqueListeService.CapturerNiveauAsync(dbContext, niveauAvantId)
+                    : null;
+
                 string idNiveauDansLeJeu = _formIdDuNiveauDansLeJeu.Trim();
                 IQueryable<Niveau> niveauxAvecLeMemeId = dbContext.Niveaux
                     .AsNoTracking()
@@ -624,6 +628,21 @@ namespace MyDemonList.Web.Components.Pages
                 }
 
                 await RecalculerPointsListeAsync(dbContext, _listeId);
+
+                NiveauHistorique? etatApres = await HistoriqueListeService.CapturerNiveauAsync(dbContext, niveau.Id);
+                bool estCreation = etatAvant is null;
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeId,
+                    _utilisateurId,
+                    estCreation ? TypesActionHistoriqueListe.NiveauCree : TypesActionHistoriqueListe.NiveauModifie,
+                    estCreation
+                        ? $"Le niveau {niveau.Nom} a été ajouté à la liste."
+                        : $"Le niveau {niveau.Nom} a été modifié.",
+                    HistoriqueListeService.CleNiveaux(_listeId),
+                    etatAvant,
+                    etatApres);
+                await dbContext.SaveChangesAsync();
 
                 if (_formMiniatureNiveauBase64 is not null)
                 {

@@ -47,6 +47,7 @@ builder.Services.AddScoped<FusionService>();
 builder.Services.AddScoped<SiteAdminService>();
 builder.Services.AddScoped<QuotaService>();
 builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<HistoriqueListeService>();
 builder.Services.AddSingleton<NotificationSignalService>();
 builder.Services.AddScoped<ProfilUtilisateurSignalService>();
 builder.Services.AddScoped<ListeSessionService>();

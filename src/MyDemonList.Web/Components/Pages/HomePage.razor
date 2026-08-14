@@ -171,6 +171,40 @@
                 }
             </section>
 
+            @if (_listesSupprimees.Count > 0)
+            {
+                <section class="section-listes section-archives">
+                    <header class="entete-section">
+                        <div class="entete-texte">
+                            <h2>Listes supprimées</h2>
+                            <p>Ces listes sont masquées du site. Ouvrez leur historique pour les restaurer.</p>
+                        </div>
+                        <span class="compteur-listes">@_listesSupprimees.Count</span>
+                    </header>
+
+                    <div class="grille-listes">
+                        @foreach (Liste liste in _listesSupprimees)
+                        {
+                            <article @key="liste.Id" class="carte-liste carte-liste--archive" @onclick="() => OuvrirHistoriqueListe(liste)">
+                                <div class="carte-contenu">
+                                    <div class="badges-carte">
+                                        <span class="badge badge-prive">Supprimée</span>
+                                    </div>
+                                    <div class="corps-carte">
+                                        <h2 class="titre-carte">@liste.Nom</h2>
+                                        <p class="description-carte">Supprimée le @(liste.DateSuppression?.ToString("dd/MM/yyyy à HH:mm") ?? "date inconnue")</p>
+                                    </div>
+                                    <footer class="carte-liste-pied">
+                                        <span>Données conservées</span>
+                                        <button type="button" class="btn-gerer" @onclick="() => OuvrirHistoriqueListe(liste)" @onclick:stopPropagation="true">Historique</button>
+                                    </footer>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </section>
+            }
+
             @if (_listesGerees.Count > 0)
             {
                 <section class="section-listes section-gerees">

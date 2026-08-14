@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyDemonList.Web.Entities;
 using MyDemonList.Web.Entities.Context;
+using MyDemonList.Web.Services;
 using MyDemonList.Web.Utils;
 
 namespace MyDemonList.Web.Components.Pages
@@ -57,6 +58,14 @@ namespace MyDemonList.Web.Components.Pages
                 ReussiteNiveau? reussite = await dbContext.ReussitesNiveaux
                     .FirstOrDefaultAsync(r => r.UtilisateurId == utilisateur.Id && r.NiveauId == soumission.NiveauId);
 
+                SoumissionHistorique soumissionAvant = HistoriqueListeService.CapturerSoumission(soumission) with
+                {
+                    UtilisateurId = utilisateur.Id
+                };
+                ReussiteHistorique? reussiteAvant = reussite is null
+                    ? null
+                    : HistoriqueListeService.CapturerReussite(reussite);
+
                 if (reussite is null)
                 {
                     dbContext.ReussitesNiveaux.Add(new ReussiteNiveau
@@ -86,6 +95,16 @@ namespace MyDemonList.Web.Components.Pages
                 }
 
                 dbContext.SoumissionsNiveaux.Remove(soumission);
+
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeId,
+                    _utilisateurId,
+                    TypesActionHistoriqueListe.SoumissionAcceptee,
+                    $"La soumission de {soumission.NomUtilisateur} pour {soumission.Niveau.Nom} a été acceptée.",
+                    HistoriqueListeService.CleSoumission(_listeId, idSoumission),
+                    new DecisionSoumissionHistorique(soumissionAvant, reussiteAvant),
+                    null);
                 await dbContext.SaveChangesAsync();
 
                 if (soumission.UtilisateurId is int destinataireAccepteId)
@@ -125,6 +144,8 @@ namespace MyDemonList.Web.Components.Pages
 
                 if (soumission is null) return;
 
+                SoumissionHistorique soumissionAvant = HistoriqueListeService.CapturerSoumission(soumission);
+
                 if (soumission.UtilisateurId is int destinataireId)
                 {
                     string lien = $"{SeoUtils.CheminSoumission(soumission.Niveau.ListeId, soumission.Niveau.Liste.Nom)}?niveau={Uri.EscapeDataString(soumission.Niveau.IdDuNiveauDansLeJeu)}";
@@ -138,6 +159,15 @@ namespace MyDemonList.Web.Components.Pages
                 }
 
                 dbContext.SoumissionsNiveaux.Remove(soumission);
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeId,
+                    _utilisateurId,
+                    TypesActionHistoriqueListe.SoumissionRefusee,
+                    $"La soumission de {soumission.NomUtilisateur} pour {soumission.Niveau.Nom} a été refusée.",
+                    HistoriqueListeService.CleSoumission(_listeId, idSoumission),
+                    soumissionAvant,
+                    null);
                 await dbContext.SaveChangesAsync();
 
                 if (soumission.UtilisateurId is int destinataireRefuseId)
