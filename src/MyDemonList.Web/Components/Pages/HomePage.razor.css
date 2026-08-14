@@ -1,6 +1,6 @@
 .accueil-page {
     width: 100%;
-    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
     margin: 0;
     padding: 34px max(24px, calc((100% - 1172px) / 2)) 60px;
     overflow-y: auto;
@@ -122,7 +122,7 @@
 
 .grille-listes {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
     gap: 18px;
 }
 
@@ -660,5 +660,58 @@
 
     .actions-formulaire .btn {
         width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    .accueil-page {
+        padding-inline: 10px;
+    }
+
+    .entete-texte h1 {
+        font-size: 1.55rem;
+    }
+
+    .entete-texte h2 {
+        font-size: 1.3rem;
+    }
+
+    .carte-contenu {
+        padding: 15px;
+    }
+
+    .carte-liste-pied {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .btn-gerer {
+        width: 100%;
+        min-height: 36px;
+    }
+
+    .actions-formulaire {
+        width: 100%;
+    }
+}
+
+.accueil-page {
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+}
+
+@media (max-width: 720px) {
+    .btn,
+    .btn-creer,
+    .btn-gerer {
+        min-height: 44px;
+    }
+
+    .titre-carte,
+    .entete-texte h1,
+    .entete-texte h2,
+    .entete-texte p {
+        overflow-wrap: anywhere;
     }
 }

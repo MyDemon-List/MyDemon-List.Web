@@ -1,0 +1,32 @@
+.etat-page {
+    display: grid;
+    min-height: calc(100dvh - 60px);
+    place-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(2rem, 9vw, 4rem);
+}
+
+p {
+    margin: 12px 0 22px;
+    color: var(--text-secondary);
+}
+
+a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    justify-self: center;
+    padding: 0 18px;
+    color: var(--white);
+    background: var(--accent-gradient);
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    text-decoration: none;
+}

@@ -1,10 +1,27 @@
 ﻿body {
     margin: 0;
+    min-width: 280px;
     background-color: var(--main-background);
     color: var(--text-primary);
     font-family: "Roboto", sans-serif;
     overflow-y: hidden;
     overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+}
+
+img,
+svg,
+video,
+iframe {
+    max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
 }
 
 @font-face {
@@ -74,4 +91,48 @@
     --shadow-card: 0 7px 18px rgba(0, 0, 0, 0.23), inset 0 1px 0 rgba(255, 255, 255, 0.035);
     --shadow-panel: 0 10px 26px rgba(0, 0, 0, 0.24);
     --shadow-floating: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 620px) {
+    :root {
+        --radius-2xl: 16px;
+    }
+}
+
+/* Base fluide commune à toutes les pages et à tous les composants enfants. */
+html,
+body {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+}
+
+body ::deep *,
+body ::deep *::before,
+body ::deep *::after {
+    box-sizing: border-box;
+}
+
+body ::deep :where(main, article, section, header, footer, nav, div, form, fieldset) {
+    min-width: 0;
+}
+
+body ::deep :where(img, svg, video, iframe) {
+    display: block;
+    max-width: 100%;
+}
+
+body ::deep :where(button, input, select, textarea) {
+    max-width: 100%;
+}
+
+body ::deep :where(h1, h2, h3, p, label, button, a, span) {
+    overflow-wrap: anywhere;
+}
+
+body ::deep h1:focus {
+    outline: none;
 }

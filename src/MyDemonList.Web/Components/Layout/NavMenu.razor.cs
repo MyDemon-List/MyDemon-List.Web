@@ -64,6 +64,7 @@ namespace MyDemonList.Web.Components.Layout
         private string _hoveredItem = "/liste";
         private string? _discordId;
         private bool _isHovering;
+        private bool _navigationMobileOuverte;
         private IJSObjectReference? _jsModule;
         private bool _notificationsSubscribed;
         private bool _rechargementCultureEnCours;
@@ -93,6 +94,7 @@ namespace MyDemonList.Web.Components.Layout
         private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
         {
             _currentUri = e.Location;
+            _navigationMobileOuverte = false;
             _panneauNotificationsOuvert = false;
             string? langueDemandee = ObtenirLangueDemandee(e.Location);
             if (!_rechargementCultureEnCours && langueDemandee is not null && langueDemandee != _langueCourante)
@@ -351,6 +353,13 @@ namespace MyDemonList.Web.Components.Layout
             _hoveredItem = new Uri(_currentUri).AbsolutePath;
             StateHasChanged();
         }
+
+        private void BasculerNavigationMobile() => _navigationMobileOuverte = !_navigationMobileOuverte;
+
+        private void FermerNavigationMobile() => _navigationMobileOuverte = false;
+
+        private string? ObtenirAriaCurrent(string cle) =>
+            NormaliserCheminNavigation(new Uri(_currentUri).AbsolutePath) == cle ? "page" : null;
 
         private bool ShouldShowIndicator()
         {
