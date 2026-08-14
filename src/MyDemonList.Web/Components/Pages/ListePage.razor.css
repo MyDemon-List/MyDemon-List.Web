@@ -484,7 +484,7 @@
     border-radius: var(--radius-md);
     border: 1px solid #2b2c30;
     background: #232428;
-    min-height: 52px;
+    min-height: 74px;
     display: flex;
     align-items: center;
     gap: 10px;

@@ -267,7 +267,10 @@
                                     }
                                     @value.Utilisateur?.Nom
                                 </a>
-                                <a class="win-yt" href="@value.Video" target="_blank" rel="ugc noopener noreferrer">@Texte["Preuve", "Preuve"]</a>
+                                @if (!string.IsNullOrWhiteSpace(value.Video))
+                                {
+                                    <a class="win-yt" href="@value.Video" target="_blank" rel="ugc noopener noreferrer">@Texte["Preuve", "Preuve"]</a>
+                                }
                             </div>
                         }
                     }

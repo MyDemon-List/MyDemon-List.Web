@@ -502,6 +502,16 @@
     white-space: nowrap;
 }
 
+.ligne-niveau .chip-createurs-liste {
+    flex: 1 1 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-radius: var(--radius-md);
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
 a.chip {
     color: inherit;
     text-decoration: none;
@@ -949,6 +959,15 @@ a.chip:hover {
     gap: 8px;
 }
 
+.input-createur-simple {
+    min-height: 42px;
+    overflow: hidden;
+    resize: none;
+    font-family: inherit;
+    line-height: 20px;
+    white-space: nowrap;
+}
+
 .btn-ajout-masse {
     align-self: flex-start;
     padding: 0;
@@ -1378,6 +1397,72 @@ a.chip:hover {
     grid-template-columns: minmax(0, 1fr) minmax(180px, .65fr);
     align-items: start;
     gap: 15px;
+}
+
+.parametres-preuve-video {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-default);
+}
+
+.parametres-sous-section-entete {
+    grid-column: 1 / -1;
+}
+
+.parametres-sous-section-entete h4 {
+    margin: 0 0 3px;
+    color: var(--white);
+    font-size: .92rem;
+}
+
+.parametres-sous-section-entete p,
+.aide-criteres-video {
+    margin: 0;
+    color: var(--text-subtle);
+    font-size: .78rem;
+    line-height: 1.45;
+}
+
+.criteres-video {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.critere-video {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 11px;
+    border: 1px solid #393b44;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, .018);
+}
+
+.parametre-switch-compact {
+    padding: 9px 10px;
+}
+
+.parametre-switch-compact .parametre-switch-piste {
+    width: 38px;
+    height: 22px;
+}
+
+.parametre-switch-compact .parametre-switch-piste::after {
+    width: 14px;
+    height: 14px;
+}
+
+.parametre-switch-compact input:checked + .parametre-switch-piste::after {
+    transform: translateX(16px);
+}
+
+.critere-video select.input {
+    width: 100%;
 }
 
 .parametre-combobox {
@@ -1973,7 +2058,8 @@ a.chip:hover {
     }
 
     .parametres-grille,
-    .parametres-raw-footage {
+    .parametres-raw-footage,
+    .criteres-video {
         grid-template-columns: minmax(0, 1fr);
     }
 

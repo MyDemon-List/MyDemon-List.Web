@@ -151,6 +151,9 @@ namespace MyDemonList.Web.Components.Pages
         private RawFootageMode _rawFootageMode = RawFootageMode.None;
         private int? _rawFootageTopStart;
         private bool _menuRawFootageOuvert;
+        private bool _videoToujoursRequise = true;
+        private int? _videoDifficulteMinimaleId;
+        private int? _videoTopStart;
         private bool _parametresEnCours;
         private string? _parametresErreur;
         private bool _parametresSauvegardes;
@@ -181,6 +184,40 @@ namespace MyDemonList.Web.Components.Pages
         {
             _rawFootageMode = mode;
             _menuRawFootageOuvert = false;
+        }
+
+        private List<Difficulte> ObtenirDifficultesVideoDisponibles() =>
+            _features.Where(PreuveVideoUtils.EstDifficultePrincipaleSelectable).ToList();
+
+        private void OnVideoToujoursRequiseChange(ChangeEventArgs e)
+        {
+            _videoToujoursRequise = e.Value is bool valeur && valeur;
+            if (_videoToujoursRequise)
+            {
+                _videoDifficulteMinimaleId = null;
+                _videoTopStart = null;
+                return;
+            }
+
+            _videoDifficulteMinimaleId ??= ObtenirDifficultesVideoDisponibles()
+                .FirstOrDefault(d => d.Nom.Equals("Easy Demon", StringComparison.OrdinalIgnoreCase))?.Id
+                ?? ObtenirDifficultesVideoDisponibles().FirstOrDefault()?.Id;
+        }
+
+        private void OnCritereDifficulteVideoChange(ChangeEventArgs e)
+        {
+            bool actif = e.Value is bool valeur && valeur;
+            _videoDifficulteMinimaleId = actif
+                ? ObtenirDifficultesVideoDisponibles()
+                    .FirstOrDefault(d => d.Nom.Equals("Easy Demon", StringComparison.OrdinalIgnoreCase))?.Id
+                    ?? ObtenirDifficultesVideoDisponibles().FirstOrDefault()?.Id
+                : null;
+        }
+
+        private void OnCritereClassementVideoChange(ChangeEventArgs e)
+        {
+            bool actif = e.Value is bool valeur && valeur;
+            _videoTopStart = actif ? Math.Max(1, _videoTopStart ?? 10) : null;
         }
 
         protected override async Task OnInitializedAsync()
@@ -365,6 +402,9 @@ namespace MyDemonList.Web.Components.Pages
                 _listeDiscordServerUrl = liste.DiscordServerUrl ?? string.Empty;
                 _rawFootageMode = liste.RawFootageMode;
                 _rawFootageTopStart = liste.RawFootageTopStart;
+                _videoToujoursRequise = liste.VideoToujoursRequise;
+                _videoDifficulteMinimaleId = liste.VideoDifficulteMinimaleId;
+                _videoTopStart = liste.VideoTopStart;
                 _listeEstSupprimee = liste.EstSupprimee;
                 _listeAUneImageDeFond = NiveauService.HasBackgroundListe(_listeId);
             }
@@ -491,6 +531,25 @@ namespace MyDemonList.Web.Components.Pages
                     return;
                 }
 
+                if (!_videoToujoursRequise && _videoDifficulteMinimaleId is null && _videoTopStart is null)
+                {
+                    _parametresErreur = Texte["CritereVideoRequis", "Choisissez au moins un seuil de difficulté ou de classement pour les vidéos obligatoires."];
+                    return;
+                }
+
+                if (_videoDifficulteMinimaleId is int difficulteVideoId &&
+                    !ObtenirDifficultesVideoDisponibles().Any(d => d.Id == difficulteVideoId))
+                {
+                    _parametresErreur = Texte["DifficulteVideoInvalide", "La difficulté minimale sélectionnée est invalide."];
+                    return;
+                }
+
+                if (_videoTopStart is <= 0)
+                {
+                    _parametresErreur = Texte["TopVideoInvalide", "Le classement de départ doit être supérieur ou égal à 1."];
+                    return;
+                }
+
                 ParametresListeHistorique avant = HistoriqueListeService.CapturerParametres(liste);
 
                 liste.Nom = nom;
@@ -499,6 +558,9 @@ namespace MyDemonList.Web.Components.Pages
                 liste.DiscordServerUrl = string.IsNullOrWhiteSpace(_listeDiscordServerUrl) ? null : _listeDiscordServerUrl.Trim();
                 liste.RawFootageMode = _rawFootageMode;
                 liste.RawFootageTopStart = _rawFootageTopStart;
+                liste.VideoToujoursRequise = _videoToujoursRequise;
+                liste.VideoDifficulteMinimaleId = _videoToujoursRequise ? null : _videoDifficulteMinimaleId;
+                liste.VideoTopStart = _videoToujoursRequise ? null : _videoTopStart;
 
                 ParametresListeHistorique apres = HistoriqueListeService.CapturerParametres(liste);
                 if (avant != apres)

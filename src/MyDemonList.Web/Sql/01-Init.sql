@@ -23,10 +23,15 @@ CREATE TABLE IF NOT EXISTS public."Listes"
     "DiscordServerUrl" text COLLATE pg_catalog."default",
     "RawFootageMode" integer NOT NULL DEFAULT 0,
     "RawFootageTopStart" integer,
+    "VideoToujoursRequise" boolean NOT NULL DEFAULT true,
+    "VideoDifficulteMinimaleId" integer,
+    "VideoTopStart" integer,
     "EstSupprimee" boolean NOT NULL DEFAULT false,
     "DateSuppression" timestamp without time zone,
     "SupprimeeParUtilisateurId" integer,
-    CONSTRAINT "PK_Listes" PRIMARY KEY ("Id")
+    CONSTRAINT "PK_Listes" PRIMARY KEY ("Id"),
+    CONSTRAINT "CK_Listes_VideoTopStart" CHECK ("VideoTopStart" IS NULL OR "VideoTopStart" > 0),
+    CONSTRAINT "CK_Listes_CritereVideo" CHECK ("VideoToujoursRequise" OR "VideoDifficulteMinimaleId" IS NOT NULL OR "VideoTopStart" IS NOT NULL)
 );
 
 CREATE TABLE IF NOT EXISTS public."MembresListe"
@@ -289,6 +294,14 @@ ALTER TABLE IF EXISTS public."Niveaux"
     ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS "IX_Niveaux_RatingId"
     ON public."Niveaux"("RatingId");
+
+ALTER TABLE IF EXISTS public."Listes"
+    ADD CONSTRAINT "FK_Listes_Difficultes_VideoDifficulteMinimaleId" FOREIGN KEY ("VideoDifficulteMinimaleId")
+    REFERENCES public."Difficultes" ("Id") MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS "IX_Listes_VideoDifficulteMinimaleId"
+    ON public."Listes"("VideoDifficulteMinimaleId");
 
 ALTER TABLE IF EXISTS public."Niveaux"
     ADD CONSTRAINT "FK_Niveaux_Utilisateurs_PublisherId" FOREIGN KEY ("PublisherId")

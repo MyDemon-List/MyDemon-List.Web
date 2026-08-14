@@ -85,10 +85,19 @@
                         }
                     </div>
 
-                    <div class="input-style-container">
-                        <input type="text" id="url-video" @bind="_newSubmission.UrlVideo" autocomplete="new-password" required />
-                        <label for="url-video">@Texte["UrlVideo", "URL de la vidéo :"]</label>
+                    <div class="input-style-container @(VideoEstRequisePourNiveauSelectionne() ? "" : "champ-video-facultative")">
+                        <input type="text" id="url-video" @bind="_newSubmission.UrlVideo" autocomplete="new-password" placeholder=" " required="@VideoEstRequisePourNiveauSelectionne()" />
+                        <label for="url-video">@(VideoEstRequisePourNiveauSelectionne() ? Texte["UrlVideo", "URL de la vidéo :"] : Texte["UrlVideoFacultative", "Vidéo facultative :"])</label>
                     </div>
+
+                    @if (_niveauSelectionne is not null && !VideoEstRequise(_niveauSelectionne))
+                    {
+                        <div class="message-info message-video-facultative">
+                            @(AcceptationAutomatiqueDisponible()
+                                ? Texte["VideoFacultativeAcceptationAuto", "La vidéo est facultative pour ce niveau. Votre réussite sera validée immédiatement."]
+                                : Texte["VideoFacultative", "La vidéo de réussite est facultative pour ce niveau."])
+                        </div>
+                    }
 
                     <div class="input-style-container champ-raw-footage @(AfficherChampRawFootage() ? "visible" : "")">
                         <input type="text" id="url-raw-footage" @bind="_newSubmission.RawFootageUrl" autocomplete="new-password" required />
@@ -98,11 +107,15 @@
                     @if (_soumissionExistante is not null)
                     {
                         <div class="message-info">
-                            @Texte.Formater("SoumissionExistante", "Vous avez déjà une soumission en attente pour ce niveau (envoyée le {0}). Valider ci-dessous la remplacera par cette nouvelle vidéo.", _soumissionExistante.DateSoumission.ToString("d"))
+                            @Texte.Formater("SoumissionExistante", "Vous avez déjà une soumission en attente pour ce niveau (envoyée le {0}). Valider ci-dessous la remplacera par cette nouvelle soumission.", _soumissionExistante.DateSoumission.ToString("d"))
                         </div>
                     }
 
-                    <button type="button" @onclick="ValidateAndSubmit">@(_soumissionExistante is not null ? Texte["MettreAJour", "Mettre à jour"] : Texte["Soumettre", "Soumettre"])</button>
+                    <button type="button" @onclick="ValidateAndSubmit">@(AcceptationAutomatiqueDisponible()
+                        ? Texte["ValiderMaReussite", "Valider ma réussite"]
+                        : _soumissionExistante is not null
+                            ? Texte["MettreAJour", "Mettre à jour"]
+                            : Texte["Soumettre", "Soumettre"])</button>
 
                     @if (!string.IsNullOrEmpty(_errorMessage))
                     {
@@ -116,7 +129,9 @@
 
                     @if (_submissionSuccess)
                     {
-                        <div class="message-valid">@Texte["SoumissionReussie", "Soumission réussie !"]</div>
+                        <div class="message-valid">@(_reussiteAccepteeAutomatiquement
+                            ? Texte["ReussiteValideeImmediatement", "Réussite validée immédiatement !"]
+                            : Texte["SoumissionReussie", "Soumission réussie !"])</div>
                     }
                 </div>
             </EditForm>
