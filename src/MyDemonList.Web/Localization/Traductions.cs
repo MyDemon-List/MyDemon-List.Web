@@ -574,7 +574,7 @@ public sealed class Traductions
         ["FusionForceeComptesIdentiques"] = "Choose two different accounts.",
         ["FusionForceeConditionDiscord"] = "Direct merge is only possible if exactly one of the two accounts is linked to Discord.",
         ["FusionEnCours"] = "Merging...",
-        ["FusionForceeConfirmation"] = "Merge {0} into {1}? {0} will be deleted and all its data transferred to {1}. This action cannot be undone."
+        ["FusionForceeConfirmation"] = "Merge {0} into {1}? {0} will be deleted and all its data transferred to {1}. The kept name will be \"{2}\". This action cannot be undone."
     };
 
     private static readonly IReadOnlyDictionary<string, string> Espagnol = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -1136,7 +1136,7 @@ public sealed class Traductions
         ["FusionForceeComptesIdentiques"] = "Elige dos cuentas diferentes.",
         ["FusionForceeConditionDiscord"] = "La fusión directa solo es posible si únicamente una de las dos cuentas está vinculada a Discord.",
         ["FusionEnCours"] = "Fusionando...",
-        ["FusionForceeConfirmation"] = "¿Fusionar {0} en {1}? {0} será eliminada y todos sus datos se transferirán a {1}. Esta acción no se puede deshacer."
+        ["FusionForceeConfirmation"] = "¿Fusionar {0} en {1}? {0} será eliminada y todos sus datos se transferirán a {1}. El nombre conservado será «{2}». Esta acción no se puede deshacer."
     };
 
     public string CodeLangue
