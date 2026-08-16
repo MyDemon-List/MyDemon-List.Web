@@ -35,7 +35,7 @@ namespace MyDemonList.Web.Components.Pages
         [Inject]
         private NotificationService NotificationService { get; set; } = default!;
 
-        private enum Onglet { Fusions, Quotas, Admins, Notifications }
+        private enum Onglet { Fusions, Quotas, Admins, FusionForcee, Notifications }
         private Onglet _ongletActuel = Onglet.Fusions;
 
         private bool _isLoading = true;

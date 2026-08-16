@@ -74,7 +74,54 @@ namespace MyDemonList.Web.Services
             if (demandeur is null || cible is null)
                 return (false, "Un des deux comptes n'existe plus.");
 
-            string nomFinal = string.IsNullOrWhiteSpace(fusion.NomConserve) ? cible.Nom : fusion.NomConserve.Trim();
+            (bool succes, string message) = await ExecuterFusionAsync(dbContext, demandeur, cible, fusion.NomConserve);
+            if (!succes)
+                return (succes, message);
+
+            await transaction.CommitAsync();
+
+            _notificationService.Signaler(cible.Id);
+
+            return (true, message);
+        }
+
+        public async Task<(bool Succes, string Message)> FusionnerDirectementAsync(int utilisateurId1, int utilisateurId2)
+        {
+            if (utilisateurId1 == utilisateurId2)
+                return (false, "Impossible de fusionner un compte avec lui-même.");
+
+            using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(_dbContextOptions);
+            await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync();
+
+            Utilisateur? utilisateur1 = await dbContext.Utilisateurs.FirstOrDefaultAsync(u => u.Id == utilisateurId1);
+            Utilisateur? utilisateur2 = await dbContext.Utilisateurs.FirstOrDefaultAsync(u => u.Id == utilisateurId2);
+
+            if (utilisateur1 is null || utilisateur2 is null)
+                return (false, "Un des deux comptes n'existe plus.");
+
+            bool utilisateur1ADiscord = await dbContext.DiscordAccounts.AnyAsync(d => d.UtilisateurId == utilisateur1.Id);
+            bool utilisateur2ADiscord = await dbContext.DiscordAccounts.AnyAsync(d => d.UtilisateurId == utilisateur2.Id);
+
+            if (utilisateur1ADiscord == utilisateur2ADiscord)
+                return (false, "La fusion directe n'est possible que si exactement un des deux comptes est relié à Discord.");
+
+            Utilisateur cible = utilisateur1ADiscord ? utilisateur1 : utilisateur2;
+            Utilisateur demandeur = utilisateur1ADiscord ? utilisateur2 : utilisateur1;
+
+            (bool succes, string message) = await ExecuterFusionAsync(dbContext, demandeur, cible, null);
+            if (!succes)
+                return (succes, message);
+
+            await transaction.CommitAsync();
+
+            _notificationService.Signaler(cible.Id);
+
+            return (true, message);
+        }
+
+        private async Task<(bool Succes, string Message)> ExecuterFusionAsync(MyDemonListWebDbContext dbContext, Utilisateur demandeur, Utilisateur cible, string? nomAConserver)
+        {
+            string nomFinal = string.IsNullOrWhiteSpace(nomAConserver) ? cible.Nom : nomAConserver.Trim();
 
             bool nomPris = await dbContext.Utilisateurs.AnyAsync(u =>
                 u.Id != demandeur.Id && u.Id != cible.Id &&
@@ -216,10 +263,6 @@ namespace MyDemonList.Web.Services
 
             cible.Nom = nomFinal;
             await dbContext.SaveChangesAsync();
-
-            await transaction.CommitAsync();
-
-            _notificationService.Signaler(cible.Id);
 
             return (true, $"Fusion effectuée. Le compte conserve le nom « {nomFinal} ».");
         }
