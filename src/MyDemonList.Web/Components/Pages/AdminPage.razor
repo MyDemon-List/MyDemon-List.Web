@@ -44,6 +44,10 @@ else
                         aria-pressed="@(_ongletActuel == Onglet.Admins)" @onclick="() => _ongletActuel = Onglet.Admins">
                     <span>@Texte["AdminsSite", "Admins du site"]</span>
                 </button>
+                <button type="button" class="onglet @(_ongletActuel == Onglet.FusionForcee ? "active" : "")"
+                        aria-pressed="@(_ongletActuel == Onglet.FusionForcee)" @onclick="() => _ongletActuel = Onglet.FusionForcee">
+                    <span>@Texte["FusionForcee", "Fusion forcée"]</span>
+                </button>
             }
             <button type="button" class="onglet @(_ongletActuel == Onglet.Notifications ? "active" : "")"
                     aria-pressed="@(_ongletActuel == Onglet.Notifications)" @onclick="() => _ongletActuel = Onglet.Notifications">
@@ -251,6 +255,84 @@ else
                         </div>
                     }
                 </div>
+            </div>
+        }
+        else if (_ongletActuel == Onglet.FusionForcee && _estChef)
+        {
+            <div class="carte-admin">
+                <h2>@Texte["FusionForcee", "Fusion forcée"]</h2>
+                <p class="details-demande">@Texte["FusionForceeAide", "Fusionne directement deux comptes sans passer par une demande. Uniquement possible si un seul des deux comptes est relié à Discord : ce compte est conservé, l'autre lui est fusionné puis supprimé."]</p>
+
+                @if (!string.IsNullOrEmpty(_fusionDirecteMessage))
+                {
+                    <div class="alert">@_fusionDirecteMessage</div>
+                }
+
+                <div class="comptes-fusion">
+                    <div class="champ champ-autocomplete">
+                        <label for="fusion-directe-1">@Texte["PremierCompte", "Premier compte"]</label>
+                        <input id="fusion-directe-1" class="input" value="@_rechercheFusionDirecte1" @oninput="e => RechercherCompteFusionDirecte(e, true)" autocomplete="off" placeholder="@Texte["RechercheCompteFusionPlaceholder", "Nom du site, pseudo ou tag Discord..."]" />
+                        @if (_suggestionsFusionDirecte1.Count > 0)
+                        {
+                            <div class="suggestions">
+                                @foreach (CompteFusionDirecte candidat in _suggestionsFusionDirecte1)
+                                {
+                                    <div class="suggestion suggestion-discord" @onclick="() => SelectCompteFusionDirecte(candidat, true)">
+                                        <span class="suggestion-nom">@candidat.NomSite</span>
+                                        <span class="suggestion-discord-info">@(candidat.ADiscord ? $"Discord : {candidat.DiscordDisplayName ?? "?"} ({candidat.DiscordUsername ?? "?"})" : Texte["AucunCompteDiscord", "Pas de compte Discord lié"])</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="champ champ-autocomplete">
+                        <label for="fusion-directe-2">@Texte["SecondCompte", "Second compte"]</label>
+                        <input id="fusion-directe-2" class="input" value="@_rechercheFusionDirecte2" @oninput="e => RechercherCompteFusionDirecte(e, false)" autocomplete="off" placeholder="@Texte["RechercheCompteFusionPlaceholder", "Nom du site, pseudo ou tag Discord..."]" />
+                        @if (_suggestionsFusionDirecte2.Count > 0)
+                        {
+                            <div class="suggestions">
+                                @foreach (CompteFusionDirecte candidat in _suggestionsFusionDirecte2)
+                                {
+                                    <div class="suggestion suggestion-discord" @onclick="() => SelectCompteFusionDirecte(candidat, false)">
+                                        <span class="suggestion-nom">@candidat.NomSite</span>
+                                        <span class="suggestion-discord-info">@(candidat.ADiscord ? $"Discord : {candidat.DiscordDisplayName ?? "?"} ({candidat.DiscordUsername ?? "?"})" : Texte["AucunCompteDiscord", "Pas de compte Discord lié"])</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (ComptesFusionDirecteIdentiques)
+                {
+                    <div class="alert alert-error">@Texte["FusionForceeComptesIdentiques", "Choisissez deux comptes différents."]</div>
+                }
+                else if (ConditionDiscordFusionDirecteInvalide)
+                {
+                    <div class="alert alert-error">@Texte["FusionForceeConditionDiscord", "La fusion directe n'est possible que si un seul des deux comptes est relié à Discord."]</div>
+                }
+
+                <div class="actions-formulaire">
+                    <button type="button" class="btn" disabled="@(!PeutConfirmerFusionDirecte || _fusionDirecteEnCours)" @onclick="DemanderFusionDirecte">
+                        @(_fusionDirecteEnCours ? Texte["FusionEnCours", "Fusion..."] : Texte["FusionnerCompte", "Fusionner un compte"])
+                    </button>
+                </div>
+
+                @if (_afficherConfirmationFusionDirecte && _compteFusionDirecte1 is not null && _compteFusionDirecte2 is not null)
+                {
+                    CompteFusionDirecte cibleFusionDirecte = _compteFusionDirecte1.ADiscord ? _compteFusionDirecte1 : _compteFusionDirecte2;
+                    CompteFusionDirecte sourceFusionDirecte = _compteFusionDirecte1.ADiscord ? _compteFusionDirecte2 : _compteFusionDirecte1;
+
+                    <div class="modal-backdrop" @onclick="AnnulerFusionDirecte"></div>
+                    <div class="modal-confirm">
+                        <p>@Texte.Formater("FusionForceeConfirmation", "Fusionner {0} dans {1} ? {0} sera supprimé et toutes ses données transférées à {1}. Cette action est irréversible.", sourceFusionDirecte.NomSite, cibleFusionDirecte.NomSite)</p>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-danger" @onclick="ConfirmerFusionDirecteAsync">@Texte["Confirmer", "Confirmer"]</button>
+                            <button type="button" @onclick="AnnulerFusionDirecte">@Texte["Annuler", "Annuler"]</button>
+                        </div>
+                    </div>
+                }
             </div>
         }
         else if (_ongletActuel == Onglet.Notifications)

@@ -565,7 +565,16 @@ public sealed class Traductions
         ["Details"] = "Details",
         ["UrlRawFootageInvalide"] = "The raw footage URL must point to YouTube, Twitch or Google Drive.",
         ["SansVideo"] = "No video",
-        ["IdentifiantDiscordIntrouvable"] = "Discord ID not found."
+        ["IdentifiantDiscordIntrouvable"] = "Discord ID not found.",
+        ["FusionForcee"] = "Direct merge",
+        ["FusionForceeAide"] = "Directly merge two accounts without going through a request. Only possible if exactly one of the two accounts is linked to Discord: that account is kept, the other is merged into it and deleted.",
+        ["PremierCompte"] = "First account",
+        ["SecondCompte"] = "Second account",
+        ["RechercheCompteFusionPlaceholder"] = "Site name, Discord username or tag...",
+        ["FusionForceeComptesIdentiques"] = "Choose two different accounts.",
+        ["FusionForceeConditionDiscord"] = "Direct merge is only possible if exactly one of the two accounts is linked to Discord.",
+        ["FusionEnCours"] = "Merging...",
+        ["FusionForceeConfirmation"] = "Merge {0} into {1}? {0} will be deleted and all its data transferred to {1}. This action cannot be undone."
     };
 
     private static readonly IReadOnlyDictionary<string, string> Espagnol = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -1118,7 +1127,16 @@ public sealed class Traductions
         ["Details"] = "Detalles",
         ["UrlRawFootageInvalide"] = "La URL del vídeo sin editar debe apuntar a YouTube, Twitch o Google Drive.",
         ["SansVideo"] = "Sin vídeo",
-        ["IdentifiantDiscordIntrouvable"] = "No se encontró el ID de Discord."
+        ["IdentifiantDiscordIntrouvable"] = "No se encontró el ID de Discord.",
+        ["FusionForcee"] = "Fusión directa",
+        ["FusionForceeAide"] = "Fusiona directamente dos cuentas sin pasar por una solicitud. Solo es posible si únicamente una de las dos cuentas está vinculada a Discord: esa cuenta se conserva, la otra se fusiona en ella y se elimina.",
+        ["PremierCompte"] = "Primera cuenta",
+        ["SecondCompte"] = "Segunda cuenta",
+        ["RechercheCompteFusionPlaceholder"] = "Nombre del sitio, pseudo o tag de Discord...",
+        ["FusionForceeComptesIdentiques"] = "Elige dos cuentas diferentes.",
+        ["FusionForceeConditionDiscord"] = "La fusión directa solo es posible si únicamente una de las dos cuentas está vinculada a Discord.",
+        ["FusionEnCours"] = "Fusionando...",
+        ["FusionForceeConfirmation"] = "¿Fusionar {0} en {1}? {0} será eliminada y todos sus datos se transferirán a {1}. Esta acción no se puede deshacer."
     };
 
     public string CodeLangue
