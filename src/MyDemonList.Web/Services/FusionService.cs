@@ -85,7 +85,7 @@ namespace MyDemonList.Web.Services
             return (true, message);
         }
 
-        public async Task<(bool Succes, string Message)> FusionnerDirectementAsync(int utilisateurId1, int utilisateurId2)
+        public async Task<(bool Succes, string Message)> FusionnerDirectementAsync(int utilisateurId1, int utilisateurId2, string? nomAConserver = null)
         {
             if (utilisateurId1 == utilisateurId2)
                 return (false, "Impossible de fusionner un compte avec lui-même.");
@@ -108,7 +108,12 @@ namespace MyDemonList.Web.Services
             Utilisateur cible = utilisateur1ADiscord ? utilisateur1 : utilisateur2;
             Utilisateur demandeur = utilisateur1ADiscord ? utilisateur2 : utilisateur1;
 
-            (bool succes, string message) = await ExecuterFusionAsync(dbContext, demandeur, cible, null);
+            string? nomFinalDemande = !string.IsNullOrWhiteSpace(nomAConserver) &&
+                (nomAConserver == utilisateur1.Nom || nomAConserver == utilisateur2.Nom)
+                ? nomAConserver
+                : null;
+
+            (bool succes, string message) = await ExecuterFusionAsync(dbContext, demandeur, cible, nomFinalDemande);
             if (!succes)
                 return (succes, message);
 
