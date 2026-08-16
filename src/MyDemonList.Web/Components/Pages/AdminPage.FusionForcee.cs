@@ -15,6 +15,7 @@ namespace MyDemonList.Web.Components.Pages
         private List<CompteFusionDirecte> _suggestionsFusionDirecte2 = [];
         private CompteFusionDirecte? _compteFusionDirecte1;
         private CompteFusionDirecte? _compteFusionDirecte2;
+        private string? _nomAConserverFusionDirecte;
         private string? _fusionDirecteMessage;
         private bool _fusionDirecteEnCours;
         private bool _afficherConfirmationFusionDirecte;
@@ -47,6 +48,7 @@ namespace MyDemonList.Web.Components.Pages
                 _compteFusionDirecte2 = null;
             }
 
+            _nomAConserverFusionDirecte = null;
             _fusionDirecteMessage = null;
 
             if (string.IsNullOrWhiteSpace(texte))
@@ -117,6 +119,20 @@ namespace MyDemonList.Web.Components.Pages
                 _rechercheFusionDirecte2 = candidat.NomSite;
                 _suggestionsFusionDirecte2 = [];
             }
+
+            MettreAJourNomParDefautFusionDirecte();
+        }
+
+        private void MettreAJourNomParDefautFusionDirecte()
+        {
+            if (!PeutConfirmerFusionDirecte || _compteFusionDirecte1 is null || _compteFusionDirecte2 is null)
+            {
+                _nomAConserverFusionDirecte = null;
+                return;
+            }
+
+            CompteFusionDirecte cible = _compteFusionDirecte1.ADiscord ? _compteFusionDirecte1 : _compteFusionDirecte2;
+            _nomAConserverFusionDirecte = cible.NomSite;
         }
 
         private void DemanderFusionDirecte()
@@ -142,7 +158,10 @@ namespace MyDemonList.Web.Components.Pages
 
             try
             {
-                (bool succes, string message) = await FusionService.FusionnerDirectementAsync(_compteFusionDirecte1.UtilisateurId, _compteFusionDirecte2.UtilisateurId);
+                (bool succes, string message) = await FusionService.FusionnerDirectementAsync(
+                    _compteFusionDirecte1.UtilisateurId,
+                    _compteFusionDirecte2.UtilisateurId,
+                    _nomAConserverFusionDirecte);
                 _fusionDirecteMessage = message;
 
                 if (succes)
@@ -151,6 +170,7 @@ namespace MyDemonList.Web.Components.Pages
                     _rechercheFusionDirecte2 = string.Empty;
                     _compteFusionDirecte1 = null;
                     _compteFusionDirecte2 = null;
+                    _nomAConserverFusionDirecte = null;
                     _suggestionsFusionDirecte1 = [];
                     _suggestionsFusionDirecte2 = [];
                     await ChargerFusions();

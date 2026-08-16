@@ -312,6 +312,16 @@ else
                 {
                     <div class="alert alert-error">@Texte["FusionForceeConditionDiscord", "La fusion directe n'est possible que si un seul des deux comptes est relié à Discord."]</div>
                 }
+                else if (PeutConfirmerFusionDirecte && _compteFusionDirecte1 is not null && _compteFusionDirecte2 is not null)
+                {
+                    <div class="champ">
+                        <label for="fusion-directe-nom">@Texte["NomConserver", "Nom à conserver"]</label>
+                        <select id="fusion-directe-nom" class="input" @bind="_nomAConserverFusionDirecte">
+                            <option value="@_compteFusionDirecte1.NomSite">@_compteFusionDirecte1.NomSite</option>
+                            <option value="@_compteFusionDirecte2.NomSite">@_compteFusionDirecte2.NomSite</option>
+                        </select>
+                    </div>
+                }
 
                 <div class="actions-formulaire">
                     <button type="button" class="btn" disabled="@(!PeutConfirmerFusionDirecte || _fusionDirecteEnCours)" @onclick="DemanderFusionDirecte">
@@ -326,7 +336,7 @@ else
 
                     <div class="modal-backdrop" @onclick="AnnulerFusionDirecte"></div>
                     <div class="modal-confirm">
-                        <p>@Texte.Formater("FusionForceeConfirmation", "Fusionner {0} dans {1} ? {0} sera supprimé et toutes ses données transférées à {1}. Cette action est irréversible.", sourceFusionDirecte.NomSite, cibleFusionDirecte.NomSite)</p>
+                        <p>@Texte.Formater("FusionForceeConfirmation", "Fusionner {0} dans {1} ? {0} sera supprimé et toutes ses données transférées à {1}. Le nom conservé sera « {2} ». Cette action est irréversible.", sourceFusionDirecte.NomSite, cibleFusionDirecte.NomSite, _nomAConserverFusionDirecte ?? cibleFusionDirecte.NomSite)</p>
                         <div class="modal-actions">
                             <button type="button" class="btn-danger" @onclick="ConfirmerFusionDirecteAsync">@Texte["Confirmer", "Confirmer"]</button>
                             <button type="button" @onclick="AnnulerFusionDirecte">@Texte["Annuler", "Annuler"]</button>
