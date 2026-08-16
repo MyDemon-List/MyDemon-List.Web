@@ -268,9 +268,15 @@ namespace MyDemonList.Web.Components.Pages
 
             if (compte?.Utilisateur is null) return;
 
+            HashSet<int> niveauxVerifies = _listeEntiereNiveaux
+                .Where(n => n.VerifieurId == compte.Utilisateur.Id)
+                .Select(n => n.Id)
+                .ToHashSet();
+
             _niveauxReussisParUtilisateurConnecte = _listeEntiereReussitesNiveaux
                 .Where(r => r.UtilisateurId == compte.Utilisateur.Id && r.Statut == "Validee")
                 .Select(r => r.NiveauId)
+                .Union(niveauxVerifies)
                 .ToHashSet();
 
             HashSet<int> niveauIdsDeLaListe = _listeEntiereNiveaux.Select(n => n.Id).ToHashSet();
