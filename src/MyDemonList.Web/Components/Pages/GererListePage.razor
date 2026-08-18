@@ -512,6 +512,14 @@ else
                     <div class="alert alert-error">@_soumissionErreur</div>
                 }
 
+                <div class="section-liste-entete">
+                    <div>
+                        <h2>@Texte["SoumissionsEnAttente", "Soumissions en attente"]</h2>
+                        <p>@Texte["SoumissionsEnAttenteAide", "Acceptez ou refusez les nouvelles preuves envoyées."]</p>
+                    </div>
+                    <span class="section-liste-compteur">@_soumissions.Count</span>
+                </div>
+
                 @if (_soumissions.Count == 0)
                 {
                     <p class="aucun-niveau">@Texte["AucuneSoumissionAttente", "Aucune soumission en attente."]</p>
@@ -568,7 +576,61 @@ else
                         </div>
                     }
                 }
+
+                <section class="section-reussites-validees">
+                    <div class="section-liste-entete">
+                        <div>
+                            <h2>@Texte["ReussitesValidees", "Réussites validées"]</h2>
+                            <p>@Texte["ReussitesValideesAide", "Consultez les réussites enregistrées et supprimez celles qui ne doivent plus apparaître."]</p>
+                        </div>
+                        <span class="section-liste-compteur">@_reussitesValidees.Count</span>
+                    </div>
+
+                    @if (_reussitesValidees.Count == 0)
+                    {
+                        <p class="aucun-niveau">@Texte["AucuneReussiteValidee", "Aucune réussite validée."]</p>
+                    }
+                    else
+                    {
+                        <div class="liste-reussites-validees">
+                            @foreach (ReussiteNiveau reussite in _reussitesValidees)
+                            {
+                                <article class="carte-reussite-validee" @key="reussite">
+                                    <div class="reussite-identite">
+                                        <strong>@reussite.Niveau?.Nom</strong>
+                                        <span>@Texte.Formater("ReussiteDeUtilisateur", "Réussite de {0}", reussite.Utilisateur?.Nom ?? "?")</span>
+                                    </div>
+
+                                    <div class="actions reussite-actions">
+                                        @if (!string.IsNullOrWhiteSpace(reussite.Video))
+                                        {
+                                            <a class="btn-lien" href="@reussite.Video" target="_blank" rel="noopener noreferrer">@Texte["VoirVideo", "Voir la vidéo"]</a>
+                                        }
+                                        <button type="button" class="btn-danger" @onclick="() => OuvrirSuppressionReussite(reussite)">@Texte["Supprimer", "Supprimer"]</button>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </section>
             </div>
+
+            @if (_reussiteASupprimer is not null)
+            {
+                <div class="modal-backdrop" @onclick="AnnulerSuppressionReussite"></div>
+                <div class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="suppression-reussite-titre">
+                    <h2 id="suppression-reussite-titre">@Texte["SupprimerReussite", "Supprimer la réussite"]</h2>
+                    <p>@Texte.Formater(
+                        "SupprimerReussiteConfirmation",
+                        "Supprimer la réussite de {0} sur {1} ? Cette action pourra être annulée depuis l'historique.",
+                        _reussiteASupprimer.Utilisateur?.Nom ?? "?",
+                        _reussiteASupprimer.Niveau?.Nom ?? "?")</p>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-danger" disabled="@_suppressionReussiteEnCours" @onclick="ConfirmerSuppressionReussite">@Texte["Confirmer", "Confirmer"]</button>
+                        <button type="button" disabled="@_suppressionReussiteEnCours" @onclick="AnnulerSuppressionReussite">@Texte["Annuler", "Annuler"]</button>
+                    </div>
+                </div>
+            }
         }
         else if (_ongletActuel == Onglet.Parametres && PeutVoirOngletParametres)
         {

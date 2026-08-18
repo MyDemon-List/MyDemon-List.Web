@@ -17,6 +17,7 @@ namespace MyDemonList.Web.Entities
         public const string SoumissionRefusee = "SoumissionRefusee";
         public const string SoumissionCreee = "SoumissionCreee";
         public const string SoumissionModifiee = "SoumissionModifiee";
+        public const string ReussiteSupprimee = "ReussiteSupprimee";
         public const string MembreAjoute = "MembreAjoute";
         public const string RoleModifie = "RoleModifie";
         public const string MembreRetire = "MembreRetire";

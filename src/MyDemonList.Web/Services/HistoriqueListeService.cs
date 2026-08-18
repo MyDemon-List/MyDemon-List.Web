@@ -27,6 +27,8 @@ namespace MyDemonList.Web.Services
 
     public sealed record ReussiteHistorique(int UtilisateurId, string Video, string Statut);
 
+    public sealed record ReussiteSupprimeeHistorique(int NiveauId, ReussiteHistorique Reussite);
+
     public sealed record SoumissionHistorique(
         int IdSoumission,
         int NiveauId,
@@ -74,6 +76,7 @@ namespace MyDemonList.Web.Services
         public static string CleNiveaux(int listeId) => $"liste:{listeId}:niveaux";
         public static string CleMembre(int listeId, int utilisateurId) => $"liste:{listeId}:membre:{utilisateurId}";
         public static string CleSoumission(int listeId, int soumissionId) => $"liste:{listeId}:soumission:{soumissionId}";
+        public static string CleReussite(int listeId, int niveauId, int utilisateurId) => $"liste:{listeId}:reussite:{niveauId}:{utilisateurId}";
 
         public static bool PeutAnnulerAvecRole(RoleListe role, HistoriqueListe historique)
         {
@@ -83,7 +86,8 @@ namespace MyDemonList.Web.Services
                     TypesActionHistoriqueListe.SoumissionCreee or
                     TypesActionHistoriqueListe.SoumissionModifiee or
                     TypesActionHistoriqueListe.SoumissionAcceptee or
-                    TypesActionHistoriqueListe.SoumissionRefusee;
+                    TypesActionHistoriqueListe.SoumissionRefusee or
+                    TypesActionHistoriqueListe.ReussiteSupprimee;
             }
 
             if (role == RoleListe.EditeurNiveaux)
@@ -91,7 +95,12 @@ namespace MyDemonList.Web.Services
                 return historique.TypeAction is
                     TypesActionHistoriqueListe.NiveauCree or
                     TypesActionHistoriqueListe.NiveauModifie or
-                    TypesActionHistoriqueListe.ClassementModifie;
+                    TypesActionHistoriqueListe.ClassementModifie or
+                    TypesActionHistoriqueListe.SoumissionCreee or
+                    TypesActionHistoriqueListe.SoumissionModifiee or
+                    TypesActionHistoriqueListe.SoumissionAcceptee or
+                    TypesActionHistoriqueListe.SoumissionRefusee or
+                    TypesActionHistoriqueListe.ReussiteSupprimee;
             }
 
             if (role != RoleListe.Administrateur)
@@ -103,9 +112,10 @@ namespace MyDemonList.Web.Services
                 TypesActionHistoriqueListe.NiveauSupprime or
                 TypesActionHistoriqueListe.ClassementModifie or
                 TypesActionHistoriqueListe.SoumissionCreee or
-                TypesActionHistoriqueListe.SoumissionModifiee or
-                TypesActionHistoriqueListe.SoumissionAcceptee or
-                TypesActionHistoriqueListe.SoumissionRefusee)
+                    TypesActionHistoriqueListe.SoumissionModifiee or
+                    TypesActionHistoriqueListe.SoumissionAcceptee or
+                    TypesActionHistoriqueListe.SoumissionRefusee or
+                    TypesActionHistoriqueListe.ReussiteSupprimee)
             {
                 return true;
             }
@@ -274,6 +284,7 @@ namespace MyDemonList.Web.Services
                         h.TypeAction == TypesActionHistoriqueListe.SoumissionModifiee ||
                         h.TypeAction == TypesActionHistoriqueListe.SoumissionAcceptee ||
                         h.TypeAction == TypesActionHistoriqueListe.SoumissionRefusee ||
+                        h.TypeAction == TypesActionHistoriqueListe.ReussiteSupprimee ||
                         h.TypeAction == TypesActionHistoriqueListe.MembreAjoute ||
                         h.TypeAction == TypesActionHistoriqueListe.RoleModifie ||
                         h.TypeAction == TypesActionHistoriqueListe.MembreRetire ||
@@ -283,12 +294,18 @@ namespace MyDemonList.Web.Services
                         h.TypeAction == TypesActionHistoriqueListe.NiveauModifie ||
                         h.TypeAction == TypesActionHistoriqueListe.NiveauSupprime ||
                         h.TypeAction == TypesActionHistoriqueListe.ClassementModifie ||
+                        h.TypeAction == TypesActionHistoriqueListe.SoumissionCreee ||
+                        h.TypeAction == TypesActionHistoriqueListe.SoumissionModifiee ||
+                        h.TypeAction == TypesActionHistoriqueListe.SoumissionAcceptee ||
+                        h.TypeAction == TypesActionHistoriqueListe.SoumissionRefusee ||
+                        h.TypeAction == TypesActionHistoriqueListe.ReussiteSupprimee ||
                         h.TypeAction == TypesActionHistoriqueListe.DemandeQuotaNiveaux),
                     RoleListe.Moderateur => requete.Where(h =>
                         h.TypeAction == TypesActionHistoriqueListe.SoumissionCreee ||
                         h.TypeAction == TypesActionHistoriqueListe.SoumissionModifiee ||
                         h.TypeAction == TypesActionHistoriqueListe.SoumissionAcceptee ||
-                        h.TypeAction == TypesActionHistoriqueListe.SoumissionRefusee),
+                        h.TypeAction == TypesActionHistoriqueListe.SoumissionRefusee ||
+                        h.TypeAction == TypesActionHistoriqueListe.ReussiteSupprimee),
                     _ => requete.Where(_ => false)
                 };
             }
@@ -499,6 +516,10 @@ namespace MyDemonList.Web.Services
                     AppliquerSoumission(soumissionAModifier, soumissionAvant);
                     return (true, string.Empty);
 
+                case TypesActionHistoriqueListe.ReussiteSupprimee:
+                    ReussiteSupprimeeHistorique reussiteSupprimee = Deserialiser<ReussiteSupprimeeHistorique>(historique.DonneesAvant);
+                    return await RestaurerReussiteSupprimeeAsync(dbContext, historique.ListeId, reussiteSupprimee);
+
                 case TypesActionHistoriqueListe.MembreAjoute:
                 case TypesActionHistoriqueListe.RoleModifie:
                 case TypesActionHistoriqueListe.MembreRetire:
@@ -510,6 +531,30 @@ namespace MyDemonList.Web.Services
                 default:
                     return (false, "TypeActionNonPrisEnCharge");
             }
+        }
+
+        private static async Task<(bool Succes, string Message)> RestaurerReussiteSupprimeeAsync(
+            MyDemonListWebDbContext dbContext,
+            int listeId,
+            ReussiteSupprimeeHistorique snapshot)
+        {
+            bool niveauValide = await dbContext.Niveaux.AnyAsync(n => n.Id == snapshot.NiveauId && n.ListeId == listeId);
+            if (!niveauValide) return (false, "NiveauExistePlus");
+
+            bool existe = await dbContext.ReussitesNiveaux.AnyAsync(r =>
+                r.NiveauId == snapshot.NiveauId &&
+                r.UtilisateurId == snapshot.Reussite.UtilisateurId);
+            if (existe) return (false, "ReussiteExisteDeja");
+
+            dbContext.ReussitesNiveaux.Add(new ReussiteNiveau
+            {
+                NiveauId = snapshot.NiveauId,
+                UtilisateurId = snapshot.Reussite.UtilisateurId,
+                Video = snapshot.Reussite.Video,
+                Statut = snapshot.Reussite.Statut
+            });
+
+            return (true, string.Empty);
         }
 
         private static async Task<(bool Succes, string Message)> AnnulerCreationNiveauAsync(
