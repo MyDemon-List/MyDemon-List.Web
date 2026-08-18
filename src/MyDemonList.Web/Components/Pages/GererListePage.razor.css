@@ -503,7 +503,8 @@
 }
 
 .ligne-niveau .chip-createurs-liste {
-    flex: 1 1 100%;
+    flex: 0 1 auto;
+    min-width: 0;
     max-width: 100%;
     box-sizing: border-box;
     border-radius: var(--radius-md);
