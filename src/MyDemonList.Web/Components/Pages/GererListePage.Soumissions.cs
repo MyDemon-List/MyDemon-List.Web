@@ -14,6 +14,8 @@ namespace MyDemonList.Web.Components.Pages
         private string? _soumissionErreur;
         private int? _soumissionOuverteId;
         private int? _soumissionEnFermetureId;
+        private ReussiteNiveau? _reussiteASupprimer;
+        private bool _suppressionReussiteEnCours;
 
         private void ToggleSoumission(int idSoumission)
         {
@@ -183,6 +185,77 @@ namespace MyDemonList.Web.Components.Pages
             {
                 _soumissionEnCoursId = null;
                 _soumissionEnFermetureId = null;
+            }
+        }
+
+        private void OuvrirSuppressionReussite(ReussiteNiveau reussite)
+        {
+            if (!PeutGererSoumissions) return;
+
+            _soumissionErreur = null;
+            _reussiteASupprimer = reussite;
+        }
+
+        private void AnnulerSuppressionReussite()
+        {
+            if (_suppressionReussiteEnCours) return;
+            _reussiteASupprimer = null;
+        }
+
+        private async Task ConfirmerSuppressionReussite()
+        {
+            if (!PeutGererSoumissions || _reussiteASupprimer is null || _suppressionReussiteEnCours)
+                return;
+
+            int niveauId = _reussiteASupprimer.NiveauId;
+            int utilisateurId = _reussiteASupprimer.UtilisateurId;
+            _suppressionReussiteEnCours = true;
+            _soumissionErreur = null;
+
+            try
+            {
+                using MyDemonListWebDbContext dbContext = new MyDemonListWebDbContext(DbContextOptions);
+                ReussiteNiveau? reussite = await dbContext.ReussitesNiveaux
+                    .Include(r => r.Niveau)
+                    .Include(r => r.Utilisateur)
+                    .FirstOrDefaultAsync(r =>
+                        r.NiveauId == niveauId &&
+                        r.UtilisateurId == utilisateurId &&
+                        r.Niveau.ListeId == _listeId);
+
+                if (reussite is null)
+                {
+                    _soumissionErreur = Texte["ReussiteIntrouvable", "Cette réussite n'existe plus."];
+                    return;
+                }
+
+                ReussiteSupprimeeHistorique snapshot = new(
+                    reussite.NiveauId,
+                    HistoriqueListeService.CapturerReussite(reussite));
+
+                dbContext.ReussitesNiveaux.Remove(reussite);
+                HistoriqueListeService.Ajouter(
+                    dbContext,
+                    _listeId,
+                    _utilisateurId,
+                    TypesActionHistoriqueListe.ReussiteSupprimee,
+                    $"La réussite de {reussite.Utilisateur.Nom} sur {reussite.Niveau.Nom} a été supprimée.",
+                    HistoriqueListeService.CleReussite(_listeId, reussite.NiveauId, reussite.UtilisateurId),
+                    snapshot,
+                    null);
+
+                await dbContext.SaveChangesAsync();
+                Chargement.ClearCache(_listeId);
+                _reussiteASupprimer = null;
+                await ChargerDonnees();
+            }
+            catch (Exception ex)
+            {
+                _soumissionErreur = Texte.Formater("ErreurSuppressionReussite", "Erreur lors de la suppression de la réussite : {0}", ex.Message);
+            }
+            finally
+            {
+                _suppressionReussiteEnCours = false;
             }
         }
     }

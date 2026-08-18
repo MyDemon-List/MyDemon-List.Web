@@ -137,6 +137,7 @@ namespace MyDemonList.Web.Components.Pages
         private List<Utilisateur> _utilisateurs = [];
         private Dictionary<int, DiscordAccount> _discordParUtilisateur = [];
         private List<SoumissionNiveau> _soumissions = [];
+        private List<ReussiteNiveau> _reussitesValidees = [];
 
         private bool _afficherConfirmationSuppression;
         private int? _niveauASupprimerId;
@@ -379,6 +380,15 @@ namespace MyDemonList.Web.Components.Pages
                 .Where(s => niveauIds.Contains(s.NiveauId))
                 .Include(s => s.Niveau)
                 .OrderBy(s => s.DateSoumission)
+                .ToListAsync();
+
+            _reussitesValidees = await dbContext.ReussitesNiveaux
+                .AsNoTracking()
+                .Where(r => niveauIds.Contains(r.NiveauId) && r.Statut == "Validee")
+                .Include(r => r.Niveau)
+                .Include(r => r.Utilisateur)
+                .OrderBy(r => r.Niveau.Nom)
+                .ThenBy(r => r.Utilisateur.Nom)
                 .ToListAsync();
 
             _soumissionOuverteId = _soumissions.FirstOrDefault()?.IdSoumission;
