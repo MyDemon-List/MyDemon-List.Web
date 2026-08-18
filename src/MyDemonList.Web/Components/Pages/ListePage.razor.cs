@@ -40,6 +40,9 @@ namespace MyDemonList.Web.Components.Pages
         [Inject]
         private IJSRuntime JsRuntime { get; set; } = default!;
 
+        [Inject]
+        private NiveauService NiveauService { get; set; } = default!;
+
         private HashSet<int> _niveauxReussisParUtilisateurConnecte = [];
         private HashSet<int> _niveauxEnAttenteParUtilisateurConnecte = [];
         private bool _peutFiltrerNiveauxNonTermines;
@@ -96,9 +99,13 @@ namespace MyDemonList.Web.Components.Pages
         private string ObtenirImageSeo()
         {
             if (_listeCourante is null) return "/Pictures/LogoMyDemonList.png";
-            if (_niveauSelectionne is not null) return $"/MiniaturesNiveaux/{_niveauSelectionne.Id}.png";
-            int? premierNiveauId = _classements.OrderBy(c => c.ClassementPosition).FirstOrDefault()?.NiveauId;
-            if (premierNiveauId is int niveauId) return $"/MiniaturesNiveaux/{niveauId}.png";
+
+            if (!string.IsNullOrWhiteSpace(NiveauSelectionne) && _niveauSelectionne is not null)
+                return $"/MiniaturesNiveaux/{_niveauSelectionne.Id}.png";
+
+            if (NiveauService.HasBackgroundListe(_listeCourante.Id))
+                return $"/BackgroundsListes/{_listeCourante.Id}.png";
+
             return "/Pictures/LogoMyDemonList.png";
         }
 
